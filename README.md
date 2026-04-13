@@ -3,7 +3,7 @@
 Web-Interface zum Verwalten und Fernsteuern von Claude Code Sessions auf deinem Mac mini —
 erreichbar per Browser, auch vom iPhone aus.
 
-![Claude Code Hub Screenshot](Screenshot%202026-04-13%20101145.png)
+![Claude Code Hub Screenshot](screenshot.png)
 
 ---
 
