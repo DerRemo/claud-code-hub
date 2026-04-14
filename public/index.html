@@ -5162,15 +5162,26 @@
       // right-click pastes direkt. navigator.clipboard.readText() braucht
       // einen User-Gesture (Rechtsklick zählt) und läuft in sicheren
       // Kontexten (https / localhost).
-      container.addEventListener('contextmenu', async (e) => {
-        e.preventDefault();
-        try {
-          const text = await navigator.clipboard.readText();
-          if (text) term.paste(text);
-        } catch (err) {
-          showToast('Zwischenablage nicht lesbar — bitte Browser-Permission erlauben', 'error');
-        }
-      });
+      // Firefox erlaubt clipboard.readText() nicht stumm — zeigt stattdessen
+      // eine Permission-Bubble mit eigenem „Einfügen"-Button ZUSÄTZLICH zum
+      // nativen Kontextmenü. Doppel-UI. Darum: in Firefox den Handler skippen,
+      // natives Menü zulassen. Dessen „Einfügen" firet ein paste-Event auf die
+      // xterm-helper-textarea, das bubblet zum Container und wird vom bereits
+      // existierenden 'paste'-Listener (weiter oben) an term.paste() delegiert.
+      // In Chrome/Safari läuft readText() silent aus User-Gesture, da machen
+      // wir weiterhin das sofortige Paste ohne Kontextmenü.
+      const isFirefox = navigator.userAgent.includes('Firefox');
+      if (!isFirefox) {
+        container.addEventListener('contextmenu', async (e) => {
+          e.preventDefault();
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text) term.paste(text);
+          } catch (err) {
+            showToast('Zwischenablage nicht lesbar — bitte Browser-Permission erlauben', 'error');
+          }
+        });
+      }
 
       // Touch-Scrolling: Claude Code läuft im Alt-Screen-Buffer, da hat
       // xterm selbst keinen Scrollback — die Historie gehört tmux. Wir
