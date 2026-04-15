@@ -3517,6 +3517,13 @@
           }
           if (msg.type !== 'session-attention') return;
           if (msg.activity) patchActivityBadge(msg.name, msg.activity);
+          // Suppression: Wenn der User gerade GENAU diese Session im Vordergrund
+          // hat und der Tab sichtbar ist, ist die In-App-Notification sinnlos —
+          // er sieht den Output ja schon live. Badge-Patch (oben) bleibt
+          // trotzdem ausgeführt, damit Activity-Label konsistent ist.
+          if (document.visibilityState === 'visible' && currentFocusedSession() === msg.name) {
+            return;
+          }
           onSessionAttention(msg.name);
         });
         ws.addEventListener('close', () => {
