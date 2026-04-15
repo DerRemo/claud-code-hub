@@ -1951,9 +1951,10 @@
 
     /* ── Touch-Toolbar über iOS-Tastatur ──────────────────────────
        - Nur sichtbar auf Touch-Geräten mit aktiver Terminal-View
-       - Position wird per visualViewport-JS über der Tastatur gehalten
-       - `--touch-bar-h` wird von JS gesetzt, damit .terminal-view Platz
-         darunter freilässt */
+       - Position wird per visualViewport-JS (translate3d) über der
+         Tastatur gehalten
+       - .terminal-view bekommt auf Mobile padding-bottom für die Bar,
+         siehe @media (pointer: coarse) weiter unten */
     .touch-bar {
       display: none;
       position: fixed;
@@ -1987,6 +1988,12 @@
       body[data-current-view="terminal"] .header { display: none; }
       body[data-current-view="terminal"] .terminal-view {
         height: calc(100dvh - var(--kb-inset, 0px));
+      }
+      /* Ohne den globalen Header muss die terminal-toolbar selbst die
+         safe-area-top reservieren — sonst rendert sie in Standalone-PWA
+         auf iPhone mit Notch unter der Status-Bar. */
+      body[data-current-view="terminal"] .terminal-toolbar {
+        padding-top: max(var(--space-3), env(safe-area-inset-top));
       }
     }
 
