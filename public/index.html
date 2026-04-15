@@ -2958,10 +2958,10 @@
     <button class="touch-key" type="button" data-seq="\x1b">Esc</button>
     <button class="touch-key" type="button" data-seq="\t">Tab</button>
     <button class="touch-key" type="button" data-ctrl>Ctrl</button>
-    <button class="touch-key" type="button" data-seq="\x1b[A">↑</button>
-    <button class="touch-key" type="button" data-seq="\x1b[B">↓</button>
-    <button class="touch-key" type="button" data-seq="\x1b[D">←</button>
-    <button class="touch-key" type="button" data-seq="\x1b[C">→</button>
+    <button class="touch-key" type="button" data-seq="\x1b[A" data-repeat>↑</button>
+    <button class="touch-key" type="button" data-seq="\x1b[B" data-repeat>↓</button>
+    <button class="touch-key" type="button" data-seq="\x1b[D" data-repeat>←</button>
+    <button class="touch-key" type="button" data-seq="\x1b[C" data-repeat>→</button>
     <button class="touch-key" type="button" data-seq="|">|</button>
     <button class="touch-key" type="button" data-seq="~">~</button>
     <button class="touch-key" type="button" data-seq="/">/</button>
@@ -6273,6 +6273,9 @@
 
     // Touch-Toolbar: Button-Handler. data-seq enthält die Escape-Sequenz
     // als JS-String-Literal (\x1b, \t, …) und wird hier einmal dekodiert.
+    // Tasten mit data-repeat (die vier Pfeile) bekommen Key-Repeat:
+    // pointerdown → sofort Send → 400ms Delay → Interval 50ms, bis
+    // pointerup/cancel/leave.
     document.querySelectorAll('#touch-bar .touch-key').forEach(btn => {
       if (btn.dataset.ctrl !== undefined) {
         btn.addEventListener('click', (e) => {
@@ -6287,10 +6290,34 @@
         .replace(/\\t/g, '\t')
         .replace(/\\n/g, '\n')
         .replace(/\\r/g, '\r');
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        sendRawInput(decoded);
-      });
+
+      if (btn.dataset.repeat !== undefined) {
+        // Key-Repeat-Pfad: pointerdown startet Repeat-Loop, Up/Cancel/
+        // Leave stoppt ihn. Pro-Button-lokaler State (in Closure), kein
+        // globaler Mutex.
+        let delayId = 0;
+        let intervalId = 0;
+        const stop = () => {
+          clearTimeout(delayId); delayId = 0;
+          clearInterval(intervalId); intervalId = 0;
+        };
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          sendRawInput(decoded);
+          stop(); // falls ein alter Repeat noch läuft
+          delayId = setTimeout(() => {
+            intervalId = setInterval(() => sendRawInput(decoded), 50);
+          }, 400);
+        });
+        btn.addEventListener('pointerup', stop);
+        btn.addEventListener('pointercancel', stop);
+        btn.addEventListener('pointerleave', stop);
+      } else {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          sendRawInput(decoded);
+        });
+      }
     });
 
     // VisualViewport-Listener: --kb-inset + Touch-Toolbar synchron halten.
