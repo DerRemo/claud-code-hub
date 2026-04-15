@@ -885,6 +885,22 @@ app.delete('/api/push/subscribe', async (req, res) => {
   res.json({ ok: true, removed });
 });
 
+// Smoke-Test: an alle registrierten Subscriptions eine Dummy-Notification senden.
+// Primäre Nutzung: UI-Button "Push-Test" + Debugging nach VAPID/Library-Changes.
+app.post('/api/push/test', async (_req, res) => {
+  const subs = pushSubs.allSubs();
+  if (!subs.length) {
+    return res.json({ ok: true, sent: 0, note: 'no subscriptions' });
+  }
+  await sendPushToAll({
+    type: 'session-attention',
+    name: 'cc-test',
+    activity: 'waiting',
+    at: Date.now(),
+  });
+  res.json({ ok: true, sent: subs.length });
+});
+
 // Mute/Unmute einer Session für Notifications. Body: { muted: bool }.
 // Muted-Flag persistiert in known-sessions.json; Fremd-Sessions ohne
 // known-Eintrag werden abgelehnt (404), weil wir nichts zu persistieren
