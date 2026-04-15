@@ -46,6 +46,7 @@ Telegram — aus dem p0-Backlog nach oben gezogen.
 - [x] Notifications: Sound-Alert in der Terminal-View {priority: p0, theme: notifications}
 - [x] Web-Push API als zweiter Notification-Kanal neben Telegram {priority: p1, theme: notifications}
 - [ ] Notifications: Telegram-DM wenn Claude auf Input wartet {priority: p0, theme: notifications}
+- [x] Terminal Desktop Copy/Paste — Shift/Alt+Drag kopiert automatisch, Cmd/Ctrl+V fügt ein cross-browser cross-platform {priority: p0, theme: terminal-ux}
 
 ## Backlog / Ideen
 
