@@ -766,6 +766,13 @@ app.post('/api/sessions', async (req, res) => {
       // Mouse-Mode sicherstellen: falls beim Server-Start tmux noch nicht
       // lief, konnte ensureMouseOn() nicht greifen — jetzt läuft tmux sicher.
       ensureMouseOn();
+      // Lifecycle-Event fire-and-forget (Latency wichtiger als Crash-Safety)
+      auditLog.record('session.create', {
+        ...auditLog.extractRequestMeta(req),
+        session: sessionName,
+        directory: dir,
+        command: cmd,
+      });
       return res.status(201).json({ ...created, preview: getSessionPreview(sessionName) });
     }
   }
@@ -788,6 +795,10 @@ app.delete('/api/sessions/:name', (req, res) => {
     for (const [k, v] of hookAlias.entries()) {
       if (v === name || k === name) hookAlias.delete(k);
     }
+    auditLog.record('session.delete', {
+      ...auditLog.extractRequestMeta(req),
+      session: name,
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -812,6 +823,11 @@ app.patch('/api/sessions/:name', async (req, res) => {
     aliasOnRename(name, fullNewName);
     // known-sessions mitziehen, damit Restore nach Rename den neuen Namen findet.
     try { await knownSessions.rename(name, fullNewName); } catch (e) { console.error('[known-sessions] rename failed:', e); }
+    auditLog.record('session.rename', {
+      ...auditLog.extractRequestMeta(req),
+      oldName: name,
+      newName,
+    });
     res.json({ success: true, name: fullNewName });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1243,6 +1259,25 @@ app.ws('/api/terminal/:name', (ws, req) => {
 
   activePtys.add(pty);
 
+  // ── Audit-Log: session.attach + session.detach ────────────────
+  // sessionMeta einmal extrahieren und über die WS-Lifetime cachen,
+  // damit die async cleanup-Handler keinen req-Closure-Zugriff brauchen.
+  // detachRecorded dedupliziert den Dual-Trigger (pty.onExit feuert
+  // meist direkt den ws.close, der dann auch recordDetach rufen will).
+  const sessionMeta = auditLog.extractRequestMeta(req);
+  const attachedAt = Date.now();
+  let detachRecorded = false;
+  const recordDetach = () => {
+    if (detachRecorded) return;
+    detachRecorded = true;
+    auditLog.record('session.detach', {
+      ...sessionMeta,
+      session: sessionName,
+      durationMs: Date.now() - attachedAt,
+    });
+  };
+  auditLog.record('session.attach', { ...sessionMeta, session: sessionName });
+
   pty.onData(data => {
     if (ws.readyState === 1) {
       try { ws.send(data, { binary: true }); } catch {}
@@ -1251,6 +1286,7 @@ app.ws('/api/terminal/:name', (ws, req) => {
 
   pty.onExit(() => {
     activePtys.delete(pty);
+    recordDetach();
     try { ws.close(); } catch {}
   });
 
@@ -1265,6 +1301,7 @@ app.ws('/api/terminal/:name', (ws, req) => {
   });
 
   ws.on('close', () => {
+    recordDetach();
     activePtys.delete(pty);
     try { pty.kill(); } catch {}
   });
