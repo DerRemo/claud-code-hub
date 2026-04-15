@@ -9,6 +9,9 @@ import { homedir } from 'os';
 import dotenv from 'dotenv';
 import { getCurrentContext, getDailyUsage } from './lib/usage.js';
 import * as knownSessions from './lib/known-sessions.js';
+import * as cfAccess from './lib/cf-access.js';
+import * as auditLog from './lib/audit-log.js';
+import { createRateLimiter } from './lib/rate-limit.js';
 import { discoverProjects, listProjects, getProject, patchProject, createProject, releaseProject, searchItems, loadRegistry } from './lib/projects.js';
 import * as projectWatcher from './lib/project-watcher.js';
 import * as attention from './lib/attention.js';
@@ -145,8 +148,18 @@ app.get('/sw.js', (_req, res) => {
 
 app.use(express.static(join(__dirname, 'public')));
 
-// ── Auth middleware ──────────────────────────────────────────────────────────
-// Akzeptiert drei Quellen:
+// ── Secure middleware ────────────────────────────────────────────────────────
+// Kombiniert zwei Auth-Layer:
+//   1. Cloudflare Access JWT (nur bei Tunnel-Requests, erkannt an Cf-Ray-Header)
+//      Wenn cfAccess.isEnabled() false ist (CF_ACCESS_* unset), wird
+//      der JWT-Check übersprungen — Dev-Mode.
+//   2. Bearer-Token aus Header/Query/WS-Subprotocol (immer, unabhängig von JWT).
+//
+// Beide Fehlermodi schreiben auth.fail-Events ins audit-log. Erster JWT
+// einer neuen Access-Session schreibt auth.login einmalig.
+// req.cchContext bekommt {user, ip, cfRay, userAgent} für Downstream.
+//
+// Akzeptiert drei Bearer-Token-Quellen:
 //   1. `Authorization: Bearer <token>` (Standard-REST)
 //   2. `?token=<token>` Query-Param (Fallback, vor allem Legacy)
 //   3. `Sec-WebSocket-Protocol: bearer.<token>` (WebSocket-Upgrade — Browser
@@ -163,11 +176,56 @@ function extractToken(req) {
   }
   return null;
 }
-function authMiddleware(req, res, next) {
-  if (!AUTH_TOKEN) return next();
-  const token = extractToken(req);
-  if (token === AUTH_TOKEN) return next();
-  res.status(401).json({ error: 'Unauthorized' });
+
+async function secureMiddleware(req, res, next) {
+  // Meta früh extrahieren — req.cchContext existiert noch nicht, also
+  // ziehen wir die Rohwerte. Wird nach erfolgreicher Auth durch context
+  // mit user angereichert.
+  const rawMeta = {
+    user: null,
+    ip: req.headers['cf-connecting-ip'] || req.ip || null,
+    cfRay: req.headers['cf-ray'] || null,
+    userAgent: req.headers['user-agent'] || null,
+  };
+  const fromTunnel = !!rawMeta.cfRay;
+
+  // 1. JWT-Check (nur bei Tunnel-Traffic UND wenn cfAccess enabled)
+  let jwtUser = null;
+  if (fromTunnel && cfAccess.isEnabled()) {
+    try {
+      const claim = await cfAccess.verifyJwtFromRequest(req);
+      jwtUser = claim.email;
+      // Fire-and-forget ist OK für Login: wenn der Prozess crashed direkt
+      // nach JWT-verify aber vor dem appendFile, verlieren wir einen
+      // Event — der nächste JWT-Request aus derselben Access-Session
+      // feuert es erneut wenn der lastSeenIat-Map-Zustand weg ist.
+      if (cfAccess.isNewLoginIat(claim.email, claim.iat)) {
+        auditLog.record('auth.login', { ...rawMeta, user: claim.email });
+      }
+    } catch (e) {
+      const code = e.code || 'unknown';
+      // Security-Event: awaited damit bei Crash garantiert persistiert.
+      await auditLog.record('auth.fail', { ...rawMeta, reason: `bad-jwt:${code}` });
+      return res.status(401).json({ error: 'Unauthorized (JWT)' });
+    }
+  }
+
+  // 2. Bearer-Check (immer, unabhängig von JWT)
+  if (AUTH_TOKEN) {
+    const token = extractToken(req);
+    if (token !== AUTH_TOKEN) {
+      await auditLog.record('auth.fail', {
+        ...rawMeta,
+        user: jwtUser,
+        reason: token ? 'bad-bearer' : 'no-token',
+      });
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  // Auth OK → Kontext setzen für Downstream-Handler
+  req.cchContext = { ...rawMeta, user: jwtUser };
+  next();
 }
 // VAPID-Public-Key ist öffentlich — kein Auth. Browser brauchen ihn vor dem
 // pushManager.subscribe() Call, also vor jeglicher Token-Interaktion.
@@ -177,7 +235,7 @@ app.get('/api/push/vapid-public-key', (_req, res) => {
   res.json({ publicKey: key });
 });
 
-app.use('/api', authMiddleware);
+app.use('/api', secureMiddleware);
 
 // ── Validation ───────────────────────────────────────────────────────────────
 // Erlaubte Zeichen im Session-Namen: Buchstaben, Zahlen, _, -, ., Leerzeichen.
