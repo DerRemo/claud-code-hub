@@ -1979,6 +1979,15 @@
       body[data-current-view="terminal"] .terminal-view {
         padding-bottom: calc(44px + env(safe-area-inset-bottom));
       }
+      /* App-Header in Terminal-View auf Mobile verstecken — Back-Button
+         und Session-Name sind bereits in der .terminal-toolbar.
+         ~108px vertikaler Platz zurückgewonnen auf iPhone mit Notch.
+         Trade-off: Push/Sound/Theme-Toggles + Kbd-Help nicht erreichbar
+         während Terminal-View. Im Dashboard-View bleibt der Header da. */
+      body[data-current-view="terminal"] .header { display: none; }
+      body[data-current-view="terminal"] .terminal-view {
+        height: calc(100dvh - var(--kb-inset, 0px));
+      }
     }
 
     .touch-key {
