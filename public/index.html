@@ -4750,10 +4750,29 @@
     }
 
     // ── Fetch sessions ───────────────────────────────────────────
+    // Server-Boot-Zeit, die wir zuletzt im X-CCH-Boot-Header gesehen haben.
+    // Wird in refreshSessions() verglichen — Mismatch = Server wurde neu
+    // gestartet, wir reloaden uns selbst damit kein stale Client-JS weiterläuft.
+    let lastServerBoot = null;
+    function checkServerBoot(res) {
+      const boot = res.headers.get('X-CCH-Boot');
+      if (!boot) return;
+      if (lastServerBoot === null) { lastServerBoot = boot; return; }
+      if (boot !== lastServerBoot) {
+        // Cooldown via sessionStorage damit wir nicht in eine Reload-Schleife
+        // kommen falls der Server flappt.
+        const lastReload = sessionStorage.getItem('cchub_reload_at');
+        if (lastReload && Date.now() - Number(lastReload) < 3000) return;
+        sessionStorage.setItem('cchub_reload_at', String(Date.now()));
+        location.reload();
+      }
+    }
+
     async function refreshSessions() {
       if (!ensureToken()) return; // Nutzer hat Prompt abgebrochen
       try {
         const res = await fetch('/api/sessions', { headers: apiHeaders() });
+        checkServerBoot(res);
         if (res.status === 401) {
           clearToken();
           sessions = [];

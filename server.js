@@ -78,6 +78,10 @@ app.use((req, res, next) => {
 // sind strikt auf die bekannten CDNs begrenzt, damit XSS-Folgeschäden
 // (externe Script-Injection, Daten-Exfil) gedeckelt sind. `connect-src`
 // erlaubt ws/wss zum eigenen Host für den Terminal-WebSocket.
+// START_TIME dient doppelt: Uptime-Rechnung in /healthz und Client-Reload-
+// Detektion via X-CCH-Boot-Header (siehe Security-Middleware).
+const START_TIME = Date.now();
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
@@ -94,6 +98,11 @@ app.use((_req, res, next) => {
   res.setHeader('Content-Security-Policy', CSP);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  // Server-Boot-Zeit als Header auf jeder Response — der Client vergleicht
+  // bei jedem Poll gegen den zuletzt gesehenen Wert und reloaded sich
+  // selbst wenn er einen neuen Server-Start erkennt. Billiger als ein
+  // eigener Handshake und natural-resilient gegen Netzwerk-Aussetzer.
+  res.setHeader('X-CCH-Boot', String(START_TIME));
   next();
 });
 
@@ -101,7 +110,6 @@ app.use((_req, res, next) => {
 // Bewusst außerhalb von `/api` und vor dem auth-middleware registriert, damit
 // er ohne Token erreichbar ist. Liefert aktuellen Zustand als JSON plus
 // Basis-Metriken, die als Startpunkt für das spätere Metrics-Feature dienen.
-const START_TIME = Date.now();
 app.get('/healthz', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json({
