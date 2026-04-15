@@ -20,15 +20,39 @@ Telegram — aus dem p0-Backlog nach oben gezogen.
 - [x] Terminal Desktop Copy/Paste — Shift/Alt+Drag kopiert automatisch, Cmd/Ctrl+V fügt ein cross-browser cross-platform {priority: p0, theme: terminal-ux}
 - [x] iOS Native-Feel Polish — Terminal-Scroll proportional zur echten Cell-Height, autocorrect/QuickType-Bar auf xterm-Textarea weg, Touch-Bar rAF-throttled, Pfeiltasten-Repeat, Ctrl-Sticky Touch-Bar+Keyboard-Sync mit 4s Auto-Release und Glow, App-Header in Mobile-Terminal-View versteckt {priority: p0, theme: mobile-ux}
 
+## Archiv: v0.3.0
+
+Historische Items die mit v0.3.0 oder davor geshipped sind. Der Parser
+ignoriert diese Section (Release-Flow wirkt nur auf Released/Dev);
+die Items sind hier reine Markdown-Dokumentation.
+
+- [x] Notifications: Badge-Count im Browser-Tab-Titel
+- [x] /healthz-Endpoint für Cloudflare Tunnel-Monitoring
+- [x] CSP-Header gegen XSS-Folgeschäden
+- [x] Subresource-Integrity für xterm.js-CDN-Scripts
+- [x] Terminal Kontrast in Lightmode nicht gut (weißer Text auf weißem Hintergrund)
+- [x] Ideenfeld leert sich nicht nach senden
+- [x] Session-Übersicht flasht beim Aktualisieren
+- [x] Offene Frage: welche CLIs neben claude reinsollen — gemini/codex/aider/cursor
+- [x] Offene Frage: Hub single-user oder multi-user
+- [x] Offene Frage: Token-Auth — Bearer bleiben oder Passkey/WebAuthn
+
 ## In Entwicklung: v0.5.0
 
-Remote-Zugriff-Härtung: der Hub hängt am öffentlichen Cloudflare-
-Tunnel und hat aktuell nur Bearer-Token-Auth. Drei Layer sollen drauf —
-aus dem p0-Backlog nach oben gezogen.
+Remote-Zugriff-Härtung plus Housekeeping-Quick-Wins. Haupt-Theme ist
+die öffentliche Tunnel-Seite des Hubs (Zero-Trust-Auth, Rate-Limiting,
+Audit-Log), nebenher ziehen fünf kleine, sofort nützliche Items aus
+dem Backlog mit rein — Bulk-Actions, Session-Pinning, browse-Allowlist,
+Auto-Reload nach Server-Restart, Git-Status pro Session-Card.
 
-- [ ] Remote-Zugriff: Cloudflare Access (Zero Trust) vor dem Tunnel {priority: p0, theme: security}
-- [ ] Remote-Zugriff: Rate-Limiting auf REST-Endpoints {priority: p0, theme: security}
-- [ ] Remote-Zugriff: Audit-Log wer hat wann welche Session attached {priority: p0, theme: security}
+- [x] Remote-Zugriff: Cloudflare Access (Zero Trust) vor dem Tunnel {priority: p0, theme: security}
+- [x] Remote-Zugriff: Rate-Limiting auf REST-Endpoints {priority: p0, theme: security}
+- [x] Remote-Zugriff: Audit-Log wer hat wann welche Session attached {priority: p0, theme: security}
+- [x] Bulk-Actions: alle idle- oder unattached-Sessions beenden {priority: p1, theme: sessions}
+- [x] Session-Pinning für wichtige Sessions oben sortiert {priority: p1, theme: sessions}
+- [x] /api/browse Allow-List via ENV statt nur HOME {priority: p2, theme: security}
+- [x] Web-Client Auto-Reload nach Server-Restart {priority: p1, theme: observability}
+- [x] Git-Status-Widget pro Session — Branch, Dirty, Ahead/Behind {priority: p1, theme: productivity}
 
 ## Backlog / Ideen
 
@@ -38,42 +62,27 @@ noch nicht shipped ist. Nach ursprünglicher Priorität und Thema gruppiert.
 - [ ] Multi-CLI: CLI-Typ als Session-Metadatum plus Icon im UI {priority: p0, theme: multi-cli}
 - [ ] Multi-CLI: Preset-Profile im New-Session-Modal {priority: p0, theme: multi-cli}
 - [ ] Multi-CLI: Per-CLI-Auth via .env.cli.name oder profiles-Ordner {priority: p0, theme: multi-cli}
-- [x] Notifications: Badge-Count im Browser-Tab-Titel {priority: p0, theme: notifications}
 - [ ] Notifications: Telegram-DM wenn Claude auf Input wartet {priority: p0, theme: notifications}
 - [ ] Session-Templates / Favoriten mit vorausgefülltem cwd und Command {priority: p1, theme: sessions}
-- [ ] Bulk-Actions: alle idle- oder unattached-Sessions beenden {priority: p1, theme: sessions}
-- [ ] Session-Pinning für wichtige Sessions oben sortiert {priority: p1, theme: sessions}
 - [ ] Split-View mit zwei Terminals nebeneinander für große Screens {priority: p1, theme: sessions}
 - [ ] asciinema-Style Recording plus Replay als cast-Export {priority: p1, theme: sessions}
 - [ ] Read-only-Share-Link mit kurzlebigem Token für Live-Debugging {priority: p1, theme: sessions}
-- [ ] Git-Status-Widget pro Session — Branch, Dirty, Ahead/Behind {priority: p1, theme: productivity}
 - [ ] Filebrowser pro Projekt — Tree-View plus Preview lesen/löschen/kopieren/verschieben/umbenennen {priority: p0, theme: productivity}
 - [ ] Offene Frage Filebrowser — Scope (Projekt-cwd oder ganzes HOME), Preview-Formate und Größen-Limit, Löschen via Trash oder rm, Cross-Projekt-Copy, Live-Refresh via fs.watch {type: decision}
 - [ ] Datei-Upload per Drag und Drop ins Terminal {priority: p1, theme: productivity}
 - [ ] Prompt-Snippet-Library mit Klick-to-paste {priority: p1, theme: productivity}
-- [x] /healthz-Endpoint für Cloudflare Tunnel-Monitoring {priority: p1, theme: observability}
 - [ ] Structured Logging via pino statt console.log {priority: p1, theme: observability}
 - [ ] Basic Metrics: aktive Sessions, Uptime, Reconnect-Count {priority: p1, theme: observability}
-- [ ] Web-Client Auto-Reload nach Server-Restart {priority: p1, theme: observability}
 - [ ] E2E-Tests als Dauer-Setup mit Playwright {priority: p2, theme: dev-x}
 - [ ] ESLint und Prettier auf server.js und inline-JS {priority: p2, theme: dev-x}
 - [ ] Docker-Image für Linux/NAS weg von Mac-only {priority: p2, theme: dev-x}
 - [ ] Request-Validation via zod oder joi auf POST/PATCH-Bodies {priority: p2, theme: dev-x}
 - [ ] GitHub Actions CI mit Lint und Tests auf Push {priority: p2, theme: dev-x}
-- [x] CSP-Header gegen XSS-Folgeschäden {priority: p2, theme: security}
-- [x] Subresource-Integrity für xterm.js-CDN-Scripts {priority: p2, theme: security}
 - [ ] CSRF-Token auf mutierende Endpoints falls Cookie-Auth kommt {priority: p2, theme: security}
 - [ ] Token-Rotation per Schedule monatlich {priority: p2, theme: security}
-- [ ] /api/browse Allow-List via ENV statt nur HOME {priority: p2, theme: security}
-- [x] Offene Frage: welche CLIs neben claude reinsollen — gemini/codex/aider/cursor {type: decision}
-- [x] Offene Frage: Hub single-user oder multi-user {type: decision}
-- [x] Offene Frage: Notifications-Kanal — Telegram allein oder mit Web-Push/macOS {type: decision}
-- [x] Offene Frage: Remote-Access-Weg — Cloudflare Access ODER Tailscale {type: decision}
-- [x] Offene Frage: Token-Auth — Bearer bleiben oder Passkey/WebAuthn {type: decision}
+- [x] Offene Frage: Notifications-Kanal — Telegram allein oder mit Web-Push/macOS (v0.4.0) {type: decision}
+- [x] Offene Frage: Remote-Access-Weg — Cloudflare Access ODER Tailscale (v0.5.0) {type: decision}
 - [ ] Item-Auto-Prompt — Klick aufs Roadmap-Item spawnt Session im Projekt-cwd und sendet den Item-Text als ersten Prompt an Claude {theme: session-link}
-- [x] Terminal Kontrast in Lightmode nicht gut (weißert text auf weißen hintergrund)
-- [x] Ideenfeld leert sich nicht nach senden
-- [x] Session übersicht flasht beim aktualisieren
 - [ ] iOS App
 
 ## Changelog

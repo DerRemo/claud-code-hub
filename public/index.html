@@ -1304,6 +1304,36 @@
     }
     .session-mute-btn svg { width: 14px; height: 14px; }
 
+    /* Pin-Button — direkt links neben dem Mute-Button. Gleiche Geometrie,
+       nur right um 36px verschoben damit die beiden Buttons nicht überlappen. */
+    .session-pin-btn {
+      position: absolute;
+      top: var(--space-3);
+      right: calc(var(--space-3) + 36px);
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-muted);
+      opacity: 0.55;
+      transition: opacity 120ms, color 120ms, background 120ms;
+      z-index: 2;
+    }
+    .session-pin-btn:hover {
+      opacity: 1;
+      background: var(--bg-card-hover);
+    }
+    .session-pin-btn[data-pinned="true"] {
+      color: var(--teal);
+      opacity: 0.9;
+    }
+    .session-pin-btn svg { width: 14px; height: 14px; }
+
     /* ── Session-Card Projekt-Badge-Slot (Phase 0 versteckt) ───────── */
     .session-project-badge {
       display: none;
@@ -1466,6 +1496,13 @@
       flex-wrap: wrap;
       min-width: 0;
     }
+    /* Running/dormant-Cards haben Mute + Pin absolut oben rechts
+       positioniert (28px + 28px + 8px Gap + 12px Edge = ~76px Zone).
+       Reserviere den Platz, damit die session-status-Pill nicht
+       drunter läuft. Foreign-Cards haben keine Buttons → kein padding. */
+    .session-card:not([data-status="foreign"]) .session-card-header {
+      padding-right: 76px;
+    }
 
     .session-name {
       font-family: var(--font-mono);
@@ -1554,6 +1591,23 @@
       align-items: center;
       gap: var(--space-1);
       white-space: nowrap;
+    }
+
+    .git-badge { gap: 4px; }
+    .git-badge .git-branch { font-family: var(--font-mono); font-size: 0.85em; }
+    .git-dirty-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--amber, #f59e0b);
+      margin-left: 2px;
+    }
+    .git-ab {
+      font-family: var(--font-mono);
+      font-size: 0.8em;
+      color: var(--text-muted, #9ca3af);
+      margin-left: 4px;
     }
 
     .usage-5h-badge {
@@ -2842,6 +2896,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
             Aktualisieren
           </button>
+          <button class="btn btn-ghost btn-sm" id="bulk-kill-btn" type="button" data-tab-scope="sessions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Bulk beenden
+          </button>
           <button class="btn btn-primary btn-sm" id="new-session-btn" type="button" data-tab-scope="sessions">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
             Neue Session
@@ -3117,6 +3175,18 @@
     </div>
   </div>
 
+  <!-- Bulk-Kill Modal -->
+  <div class="modal-overlay" id="bulk-kill-modal" role="dialog" aria-modal="true" aria-labelledby="bulk-kill-title">
+    <div class="modal">
+      <h2 id="bulk-kill-title">Idle-Sessions beenden</h2>
+      <p id="bulk-kill-body"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" id="bulk-kill-cancel">Abbrechen</button>
+        <button class="btn btn-danger" type="button" id="bulk-kill-confirm">Alle beenden</button>
+      </div>
+    </div>
+  </div>
+
     <!-- Adopt-Modal: kleines Modal zum Umbenennen einer fremden tmux-Session -->
     <div id="adopt-modal" class="modal-overlay">
       <div class="modal adopt-modal">
@@ -3369,6 +3439,21 @@
         : `${Math.round(s.contextLimit / 1000)}k`;
       const model = s.contextModel || '?';
       return `${tok} / ${lim} tokens · ${model}`;
+    }
+    function renderGitBadge(git) {
+      if (!git) return '';
+      const { branch, dirty, ahead, behind } = git;
+      const dirtyDot = dirty ? '<span class="git-dirty-dot" title="Ungestagede Änderungen" aria-label="dirty"></span>' : '';
+      // ahead/behind nur zeigen wenn Upstream existiert UND Wert != 0
+      const abParts = [];
+      if (ahead !== null && ahead > 0) abParts.push(`↑${ahead}`);
+      if (behind !== null && behind > 0) abParts.push(`↓${behind}`);
+      const ab = abParts.length ? `<span class="git-ab">${abParts.join(' ')}</span>` : '';
+      return `
+        <div class="session-meta-item git-badge" title="Git-Status">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>
+          <span class="git-branch">${escapeHtml(branch)}</span>${dirtyDot}${ab}
+        </div>`;
     }
     function formatTokensCompact(n) {
       if (!n) return '0';
@@ -4704,10 +4789,29 @@
     }
 
     // ── Fetch sessions ───────────────────────────────────────────
+    // Server-Boot-Zeit, die wir zuletzt im X-CCH-Boot-Header gesehen haben.
+    // Wird in refreshSessions() verglichen — Mismatch = Server wurde neu
+    // gestartet, wir reloaden uns selbst damit kein stale Client-JS weiterläuft.
+    let lastServerBoot = null;
+    function checkServerBoot(res) {
+      const boot = res.headers.get('X-CCH-Boot');
+      if (!boot) return;
+      if (lastServerBoot === null) { lastServerBoot = boot; return; }
+      if (boot !== lastServerBoot) {
+        // Cooldown via sessionStorage damit wir nicht in eine Reload-Schleife
+        // kommen falls der Server flappt.
+        const lastReload = sessionStorage.getItem('cchub_reload_at');
+        if (lastReload && Date.now() - Number(lastReload) < 3000) return;
+        sessionStorage.setItem('cchub_reload_at', String(Date.now()));
+        location.reload();
+      }
+    }
+
     async function refreshSessions() {
       if (!ensureToken()) return; // Nutzer hat Prompt abgebrochen
       try {
         const res = await fetch('/api/sessions', { headers: apiHeaders() });
+        checkServerBoot(res);
         if (res.status === 401) {
           clearToken();
           sessions = [];
@@ -4820,6 +4924,17 @@
         if (byStatus[key]) byStatus[key].push(s);
       }
 
+      // Gepinnte Sessions innerhalb ihrer Partition nach oben sortieren.
+      // Array.sort ist in modernen Engines stabil — die relative Reihenfolge
+      // gleichartiger (pinned/unpinned) Sessions bleibt erhalten.
+      for (const key of Object.keys(byStatus)) {
+        byStatus[key].sort((a, b) => {
+          const ap = a.pinned ? 1 : 0;
+          const bp = b.pinned ? 1 : 0;
+          return bp - ap; // pinned first
+        });
+      }
+
       const activityMap = {
         working: { cls: 'working', label: 'Arbeitet',       title: 'Claude arbeitet gerade (ESC im Terminal zum Abbrechen)' },
         waiting: { cls: 'waiting', label: 'Braucht Input',  title: 'Claude wartet auf deinen Input' },
@@ -4835,6 +4950,14 @@
           }
         </button>`;
 
+      // Pin-Button für running/dormant-Cards. Foreign-Sessions werden hier
+      // nicht gerendert — sie haben keinen known-sessions-Eintrag und können
+      // daher nicht persistiert werden (setPinned gibt 404).
+      const renderPinButton = (pinned) => `
+        <button class="session-pin-btn" type="button" data-action="pin" data-pinned="${pinned ? 'true' : 'false'}" data-stop-propagation aria-label="${pinned ? 'Angepinnt — klicken zum Loslösen' : 'Anpinnen'}" title="${pinned ? 'Angepinnt — klicken zum Loslösen' : 'Anpinnen — Session ans Listenende ziehen'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>`;
+
       const renderRunningCard = (s) => {
         const displayName = s.name.replace(/^cc-/, '');
         const age = formatAge(s.created);
@@ -4845,6 +4968,7 @@
         return `
           <div class="session-card${unreadCls}" data-status="running" data-name="${safeName}" data-attached="${s.attached}">
             ${renderMuteButton(s.muted)}
+            ${renderPinButton(s.pinned)}
             <div class="session-card-header">
               <div class="session-name">
                 <span class="icon">&gt;_</span>
@@ -4870,6 +4994,7 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                 5h ${formatUsage5h(s.usagePct5h)}
               </div>` : ''}
+              ${renderGitBadge(s.git)}
             </div>
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-ghost btn-sm" data-action="connect">
@@ -4893,6 +5018,7 @@
         return `
           <div class="session-card${unreadCls}" data-status="dormant" data-name="${safeName}">
             ${renderMuteButton(s.muted)}
+            ${renderPinButton(s.pinned)}
             <div class="session-card-header">
               <div class="session-name">
                 <span class="icon">&gt;_</span>
@@ -4905,6 +5031,7 @@
               <div>$ ${escapeHtml(s.command || 'claude')}</div>
               <div>Zuletzt gesehen: ${escapeHtml(lastSeen)}</div>
             </div>
+            ${s.git ? `<div class="session-meta" style="padding-top: var(--space-2)">${renderGitBadge(s.git)}</div>` : ''}
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-primary btn-sm" data-action="restore">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -5142,6 +5269,38 @@
             showToast('Mute fehlgeschlagen', 'error');
           } finally {
             muteBtn.disabled = false;
+          }
+          return;
+        }
+
+        // Pin-Toggle
+        const pinBtn = e.target.closest('[data-action="pin"]');
+        if (pinBtn) {
+          e.stopPropagation();
+          if (pinBtn.disabled) return;
+          const currentlyPinned = pinBtn.dataset.pinned === 'true';
+          const next = !currentlyPinned;
+          pinBtn.disabled = true;
+          try {
+            const res = await fetch('/api/sessions/' + encodeURIComponent(name) + '/pin', {
+              method: 'POST',
+              headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pinned: next }),
+            });
+            if (res.status === 404) {
+              showToast('Nur bekannte Sessions können gepinnt werden', 'error');
+              return;
+            }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            pinBtn.dataset.pinned = String(next);
+            const cached = sessions?.find(s => s.name === name);
+            if (cached) cached.pinned = next;
+            showToast(next ? 'Session angepinnt' : 'Session losgelöst', 'info');
+            refreshSessions(); // neu sortieren
+          } catch {
+            showToast('Pinning fehlgeschlagen', 'error');
+          } finally {
+            pinBtn.disabled = false;
           }
           return;
         }
@@ -5845,6 +6004,93 @@
       }
     }
 
+    // ── Bulk-Kill ─────────────────────────────────────────────────
+    function openBulkKillModal() {
+      const candidates = (sessions || []).filter(s =>
+        !s.attached && s.activity !== 'working' && s.activity !== 'waiting'
+      );
+      if (candidates.length === 0) {
+        showToast('Keine idle Sessions zum Beenden', 'info');
+        return;
+      }
+
+      // Build body text with XSS-safe textContent for the list items
+      const body = document.getElementById('bulk-kill-body');
+      body.textContent = '';
+
+      const intro = document.createElement('span');
+      intro.textContent = `Beende ${candidates.length} Session${candidates.length === 1 ? '' : 's'} ohne aktuelle Aktivität:`;
+      body.appendChild(intro);
+
+      const ul = document.createElement('ul');
+      ul.style.cssText = 'margin: 8px 0 0 0; padding-left: 20px; list-style: disc;';
+      const shown = candidates.slice(0, 10);
+      shown.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = s.name.replace(/^cc-/, '');
+        ul.appendChild(li);
+      });
+      if (candidates.length > 10) {
+        const li = document.createElement('li');
+        li.style.opacity = '0.6';
+        li.textContent = `und ${candidates.length - 10} weitere…`;
+        ul.appendChild(li);
+      }
+      body.appendChild(ul);
+
+      // Store candidates on modal for use by confirm handler
+      const modal = document.getElementById('bulk-kill-modal');
+      modal._candidates = candidates;
+      modal.classList.add('open');
+    }
+
+    function closeBulkKillModal() {
+      document.getElementById('bulk-kill-modal').classList.remove('open');
+    }
+
+    document.getElementById('bulk-kill-btn').addEventListener('click', openBulkKillModal);
+
+    document.getElementById('bulk-kill-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeBulkKillModal();
+    });
+
+    document.getElementById('bulk-kill-cancel').addEventListener('click', closeBulkKillModal);
+
+    document.getElementById('bulk-kill-confirm').addEventListener('click', async () => {
+      const modal = document.getElementById('bulk-kill-modal');
+      const candidates = modal._candidates || [];
+      if (candidates.length === 0) { closeBulkKillModal(); return; }
+
+      // Disable buttons during operation
+      const confirmBtn = document.getElementById('bulk-kill-confirm');
+      const cancelBtn = document.getElementById('bulk-kill-cancel');
+      confirmBtn.disabled = true;
+      cancelBtn.disabled = true;
+
+      const results = await Promise.allSettled(
+        candidates.map(s =>
+          fetch(`/api/sessions/${encodeURIComponent(s.name)}`, {
+            method: 'DELETE',
+            headers: apiHeaders(),
+          }).then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); })
+        )
+      );
+
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      closeBulkKillModal();
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+
+      if (failed === 0) {
+        showToast(`${succeeded} Session${succeeded === 1 ? '' : 's'} beendet`, 'success');
+      } else {
+        showToast(`${succeeded} beendet, ${failed} fehlgeschlagen`, 'error');
+      }
+      refreshSessions();
+    });
+
     function killCurrentSession() {
       if (!currentSessionName) return;
       const name = currentSessionName;
@@ -6410,17 +6656,19 @@
       const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active?.isContentEditable;
       const inTerminal = currentView === 'terminal';
       const modalOpen = document.getElementById('new-session-modal').classList.contains('open');
+      const bulkKillOpen = document.getElementById('bulk-kill-modal').classList.contains('open');
 
       // Escape: immer handlen — Terminal-View zurück, Modal schließen, Help schließen
       if (e.key === 'Escape') {
         if (helpOverlay.classList.contains('open')) { toggleHelp(false); return; }
         if (modalOpen) { closeNewSessionModal(); return; }
+        if (bulkKillOpen) { closeBulkKillModal(); return; }
         if (inTerminal) { e.preventDefault(); setView('dashboard'); return; }
         return;
       }
 
       // Alle anderen Shortcuts nur im Dashboard + nicht in einem Input
-      if (inInput || inTerminal || modalOpen) return;
+      if (inInput || inTerminal || modalOpen || bulkKillOpen) return;
 
       switch (e.key) {
         case 'n': e.preventDefault(); openNewSessionModal(); break;

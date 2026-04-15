@@ -1,3 +1,9 @@
+// dotenv MUSS als Side-Effect-Import ganz oben stehen. ES-Module-Hoisting
+// führt alle `import`-Statements aus bevor Top-Level-Statements laufen —
+// wenn wir dotenv.config() erst nach den Imports riefen, hätten Module
+// wie lib/cf-access.js, die Env-Variablen beim Load lesen, nur leere
+// Werte gesehen.
+import 'dotenv/config';
 import express from 'express';
 import expressWs from 'express-ws';
 import { spawn } from 'node-pty';
@@ -6,17 +12,17 @@ import { fileURLToPath } from 'url';
 import { dirname, join, resolve, sep } from 'path';
 import { readdirSync } from 'fs';
 import { homedir } from 'os';
-import dotenv from 'dotenv';
 import { getCurrentContext, getDailyUsage } from './lib/usage.js';
 import * as knownSessions from './lib/known-sessions.js';
+import * as cfAccess from './lib/cf-access.js';
+import * as auditLog from './lib/audit-log.js';
+import { createRateLimiter } from './lib/rate-limit.js';
 import { discoverProjects, listProjects, getProject, patchProject, createProject, releaseProject, searchItems, loadRegistry } from './lib/projects.js';
 import * as projectWatcher from './lib/project-watcher.js';
 import * as attention from './lib/attention.js';
 import { loadVapid } from './lib/vapid.js';
 import * as pushSubs from './lib/push-subscriptions.js';
 import webpush from 'web-push';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -78,6 +84,10 @@ app.use((req, res, next) => {
 // sind strikt auf die bekannten CDNs begrenzt, damit XSS-Folgeschäden
 // (externe Script-Injection, Daten-Exfil) gedeckelt sind. `connect-src`
 // erlaubt ws/wss zum eigenen Host für den Terminal-WebSocket.
+// START_TIME dient doppelt: Uptime-Rechnung in /healthz und Client-Reload-
+// Detektion via X-CCH-Boot-Header (siehe Security-Middleware).
+const START_TIME = Date.now();
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
@@ -94,6 +104,11 @@ app.use((_req, res, next) => {
   res.setHeader('Content-Security-Policy', CSP);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  // Server-Boot-Zeit als Header auf jeder Response — der Client vergleicht
+  // bei jedem Poll gegen den zuletzt gesehenen Wert und reloaded sich
+  // selbst wenn er einen neuen Server-Start erkennt. Billiger als ein
+  // eigener Handshake und natural-resilient gegen Netzwerk-Aussetzer.
+  res.setHeader('X-CCH-Boot', String(START_TIME));
   next();
 });
 
@@ -101,7 +116,6 @@ app.use((_req, res, next) => {
 // Bewusst außerhalb von `/api` und vor dem auth-middleware registriert, damit
 // er ohne Token erreichbar ist. Liefert aktuellen Zustand als JSON plus
 // Basis-Metriken, die als Startpunkt für das spätere Metrics-Feature dienen.
-const START_TIME = Date.now();
 app.get('/healthz', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json({
@@ -137,8 +151,18 @@ app.get('/sw.js', (_req, res) => {
 
 app.use(express.static(join(__dirname, 'public')));
 
-// ── Auth middleware ──────────────────────────────────────────────────────────
-// Akzeptiert drei Quellen:
+// ── Secure middleware ────────────────────────────────────────────────────────
+// Kombiniert zwei Auth-Layer:
+//   1. Cloudflare Access JWT (nur bei Tunnel-Requests, erkannt an Cf-Ray-Header)
+//      Wenn cfAccess.isEnabled() false ist (CF_ACCESS_* unset), wird
+//      der JWT-Check übersprungen — Dev-Mode.
+//   2. Bearer-Token aus Header/Query/WS-Subprotocol (immer, unabhängig von JWT).
+//
+// Beide Fehlermodi schreiben auth.fail-Events ins audit-log. Erster JWT
+// einer neuen Access-Session schreibt auth.login einmalig.
+// req.cchContext bekommt {user, ip, cfRay, userAgent} für Downstream.
+//
+// Akzeptiert drei Bearer-Token-Quellen:
 //   1. `Authorization: Bearer <token>` (Standard-REST)
 //   2. `?token=<token>` Query-Param (Fallback, vor allem Legacy)
 //   3. `Sec-WebSocket-Protocol: bearer.<token>` (WebSocket-Upgrade — Browser
@@ -155,11 +179,56 @@ function extractToken(req) {
   }
   return null;
 }
-function authMiddleware(req, res, next) {
-  if (!AUTH_TOKEN) return next();
-  const token = extractToken(req);
-  if (token === AUTH_TOKEN) return next();
-  res.status(401).json({ error: 'Unauthorized' });
+
+async function secureMiddleware(req, res, next) {
+  // Meta früh extrahieren — req.cchContext existiert noch nicht, also
+  // ziehen wir die Rohwerte. Wird nach erfolgreicher Auth durch context
+  // mit user angereichert.
+  const rawMeta = {
+    user: null,
+    ip: req.headers['cf-connecting-ip'] || req.ip || null,
+    cfRay: req.headers['cf-ray'] || null,
+    userAgent: req.headers['user-agent'] || null,
+  };
+  const fromTunnel = !!rawMeta.cfRay;
+
+  // 1. JWT-Check (nur bei Tunnel-Traffic UND wenn cfAccess enabled)
+  let jwtUser = null;
+  if (fromTunnel && cfAccess.isEnabled()) {
+    try {
+      const claim = await cfAccess.verifyJwtFromRequest(req);
+      jwtUser = claim.email;
+      // Fire-and-forget ist OK für Login: wenn der Prozess crashed direkt
+      // nach JWT-verify aber vor dem appendFile, verlieren wir einen
+      // Event — der nächste JWT-Request aus derselben Access-Session
+      // feuert es erneut wenn der lastSeenIat-Map-Zustand weg ist.
+      if (cfAccess.isNewLoginIat(claim.email, claim.iat)) {
+        auditLog.record('auth.login', { ...rawMeta, user: claim.email });
+      }
+    } catch (e) {
+      const code = e.code || 'unknown';
+      // Security-Event: awaited damit bei Crash garantiert persistiert.
+      await auditLog.record('auth.fail', { ...rawMeta, reason: `bad-jwt:${code}` });
+      return res.status(401).json({ error: 'Unauthorized (JWT)' });
+    }
+  }
+
+  // 2. Bearer-Check (immer, unabhängig von JWT)
+  if (AUTH_TOKEN) {
+    const token = extractToken(req);
+    if (token !== AUTH_TOKEN) {
+      await auditLog.record('auth.fail', {
+        ...rawMeta,
+        user: jwtUser,
+        reason: token ? 'bad-bearer' : 'no-token',
+      });
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  // Auth OK → Kontext setzen für Downstream-Handler
+  req.cchContext = { ...rawMeta, user: jwtUser };
+  next();
 }
 // VAPID-Public-Key ist öffentlich — kein Auth. Browser brauchen ihn vor dem
 // pushManager.subscribe() Call, also vor jeglicher Token-Interaktion.
@@ -169,7 +238,32 @@ app.get('/api/push/vapid-public-key', (_req, res) => {
   res.json({ publicKey: key });
 });
 
-app.use('/api', authMiddleware);
+app.use('/api', secureMiddleware);
+
+// ── Rate-Limiting ────────────────────────────────────────────────────────────
+// Zwei Buckets via createRateLimiter: Read (GET/HEAD) und Write (sonst).
+// Hooks sind exempt weil Claude-Code bei heißen Sessions viele
+// UserPromptSubmit-Events pro Minute feuern kann und legitime Events
+// sonst gedroppt würden. /healthz liegt außerhalb von /api/* und ist
+// schon dadurch ausgenommen.
+//
+// onExceeded-Callback feuert rate-limit.exceeded ins audit-log.
+const rlOnExceeded = (req, info) => {
+  auditLog.record('rate-limit.exceeded', {
+    ...auditLog.extractRequestMeta(req),
+    bucket: info.bucket,
+    max: info.max,
+    windowMs: info.windowMs,
+  });
+};
+const readLimiter  = createRateLimiter({ bucket: 'read',  max: 300, windowMs: 60_000, onExceeded: rlOnExceeded });
+const writeLimiter = createRateLimiter({ bucket: 'write', max:  60, windowMs: 60_000, onExceeded: rlOnExceeded });
+
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/hooks/')) return next();
+  if (req.method === 'GET' || req.method === 'HEAD') return readLimiter(req, res, next);
+  return writeLimiter(req, res, next);
+});
 
 // ── Validation ───────────────────────────────────────────────────────────────
 // Erlaubte Zeichen im Session-Namen: Buchstaben, Zahlen, _, -, ., Leerzeichen.
@@ -179,9 +273,28 @@ const validSessionName = (n) => typeof n === 'string' && SESSION_NAME_RE.test(n)
 
 // Browse auf den Home-Ordner eingrenzen — verhindert `?path=/etc/passwd`.
 const HOME = homedir();
-function isUnderHome(p) {
+
+// Allow-List für /api/browse und POST /api/projects. Default: nur $HOME.
+// Override via BROWSE_ROOTS-Env als `:`-getrennte Liste absoluter Pfade,
+// `~` wird zu $HOME expandiert. Beispiel:
+//   BROWSE_ROOTS=~/Projects:/Volumes/SSD/code
+// Pfade werden beim Start einmal resolved — kein Hot-Reload. Leere oder
+// nicht-existente Pfade im Env werden wortlos übersprungen, damit ein
+// vertipptes Segment nicht die ganze Allow-List kippt.
+const BROWSE_ROOTS = (() => {
+  const raw = (process.env.BROWSE_ROOTS || '').trim();
+  if (!raw) return [HOME];
+  const roots = raw
+    .split(':')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => (s === '~' || s.startsWith('~/')) ? join(HOME, s.slice(1)) : s)
+    .map(s => resolve(s));
+  return roots.length ? roots : [HOME];
+})();
+function isUnderAllowedRoot(p) {
   const r = resolve(p);
-  return r === HOME || r.startsWith(HOME + sep);
+  return BROWSE_ROOTS.some(root => r === root || r.startsWith(root + sep));
 }
 
 // ── Helper: tmux list-sessions ───────────────────────────────────────────────
@@ -238,6 +351,59 @@ function invalidatePreview(name) {
   for (const key of Array.from(previewCache.keys())) {
     if (key === name || key.startsWith(name + '|')) previewCache.delete(key);
   }
+}
+
+// ── Helper: git-status pro Session-cwd mit TTL-Cache ─────────────────────────
+// Gleiches Cache-TTL wie pane-preview (2s) — jeder Dashboard-Poll löst
+// sonst einen execFile pro Session aus. Wenn der cwd kein git-Repo ist
+// oder git fehlt, liefern wir null und die Card zeigt keinen Widget.
+const gitStatusCache = new Map();
+const GIT_STATUS_TTL_MS = 2000;
+
+function getGitStatus(cwd) {
+  if (!cwd) return null;
+  const cached = gitStatusCache.get(cwd);
+  if (cached && Date.now() - cached.ts < GIT_STATUS_TTL_MS) return cached.value;
+  let value = null;
+  try {
+    const out = execFileSync('git', ['-C', cwd, 'status', '--porcelain=v2', '--branch', '-z'], {
+      encoding: 'utf-8',
+      timeout: 1500,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    value = parseGitStatus(out);
+  } catch {
+    value = null;
+  }
+  gitStatusCache.set(cwd, { value, ts: Date.now() });
+  return value;
+}
+
+function parseGitStatus(raw) {
+  // --porcelain=v2 -z liefert NUL-getrennte Records. Header-Zeilen (`# ...`)
+  // sind am Anfang, gefolgt von File-Change-Records.
+  // Wir brauchen: branch.head, branch.ab, sowie die reine Existenz einer
+  // non-header-Zeile als dirty-Flag.
+  const records = raw.split('\0');
+  let branch = null;
+  let ahead = null;
+  let behind = null;
+  let dirty = false;
+  for (const rec of records) {
+    if (!rec) continue;
+    if (rec.startsWith('# branch.head ')) {
+      branch = rec.slice('# branch.head '.length);
+    } else if (rec.startsWith('# branch.ab ')) {
+      // Format: `# branch.ab +<ahead> -<behind>`
+      const m = rec.match(/\+(\d+)\s+-(\d+)/);
+      if (m) { ahead = parseInt(m[1], 10); behind = parseInt(m[2], 10); }
+    } else if (!rec.startsWith('# ')) {
+      dirty = true;
+    }
+  }
+  if (!branch) return null;  // keine gültige git-Ausgabe
+  // `(detached)` wird von git genau so geliefert bei HEAD-losem Repo.
+  return { branch, dirty, ahead, behind };
 }
 
 // ── Usage-Limit-Parsing ──────────────────────────────────────────────────────
@@ -355,6 +521,8 @@ app.get('/api/sessions', (req, res) => {
       base.contextPct = null;
     }
     base.muted = knownSessions.isMuted(s.name);
+    base.pinned = knownSessions.isPinned(s.name);
+    base.git = getGitStatus(s.path);
     return base;
   };
 
@@ -432,11 +600,12 @@ app.post('/api/projects', async (req, res) => {
   if (typeof projectPath !== 'string' || !projectPath) {
     return res.status(400).json({ error: 'path required' });
   }
-  // Pfad-Gate: nur unter $HOME erlauben, konsistent mit /api/browse.
-  // Hier bewusst kein `~`-Expand — Frontend liefert absolute Pfade.
+  // Pfad-Gate: Allow-List aus BROWSE_ROOTS (Default $HOME), konsistent
+  // mit /api/browse. Hier bewusst kein `~`-Expand — Frontend liefert
+  // absolute Pfade.
   const absPath = resolve(projectPath);
-  if (!isUnderHome(absPath)) {
-    return res.status(403).json({ error: 'path must be under home directory' });
+  if (!isUnderAllowedRoot(absPath)) {
+    return res.status(403).json({ error: 'path outside allowed roots' });
   }
   try {
     const entry = await createProject({ displayName, path: absPath });
@@ -531,13 +700,14 @@ app.patch('/api/projects/:id/items', async (req, res) => {
   }
 });
 
-// Browse directories (for tree picker in UI). Path-Allowlist: nur unter Home.
+// Browse directories (for tree picker in UI). Path-Allowlist aus
+// BROWSE_ROOTS (Default $HOME), siehe isUnderAllowedRoot oben.
 app.get('/api/browse', (req, res) => {
   let p = req.query.path || process.env.DEFAULT_PROJECT_DIR || '~';
   if (p === '~' || p.startsWith('~/')) p = join(HOME, p.slice(1));
   p = resolve(p);
-  if (!isUnderHome(p)) {
-    return res.status(403).json({ error: 'Access denied: path outside home directory', path: p });
+  if (!isUnderAllowedRoot(p)) {
+    return res.status(403).json({ error: 'Access denied: path outside allowed roots', path: p });
   }
   const showHidden = req.query.hidden === '1';
   try {
@@ -599,6 +769,13 @@ app.post('/api/sessions', async (req, res) => {
       // Mouse-Mode sicherstellen: falls beim Server-Start tmux noch nicht
       // lief, konnte ensureMouseOn() nicht greifen — jetzt läuft tmux sicher.
       ensureMouseOn();
+      // Lifecycle-Event fire-and-forget (Latency wichtiger als Crash-Safety)
+      auditLog.record('session.create', {
+        ...auditLog.extractRequestMeta(req),
+        session: sessionName,
+        directory: dir,
+        command: cmd,
+      });
       return res.status(201).json({ ...created, preview: getSessionPreview(sessionName) });
     }
   }
@@ -621,6 +798,10 @@ app.delete('/api/sessions/:name', (req, res) => {
     for (const [k, v] of hookAlias.entries()) {
       if (v === name || k === name) hookAlias.delete(k);
     }
+    auditLog.record('session.delete', {
+      ...auditLog.extractRequestMeta(req),
+      session: name,
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -645,6 +826,11 @@ app.patch('/api/sessions/:name', async (req, res) => {
     aliasOnRename(name, fullNewName);
     // known-sessions mitziehen, damit Restore nach Rename den neuen Namen findet.
     try { await knownSessions.rename(name, fullNewName); } catch (e) { console.error('[known-sessions] rename failed:', e); }
+    auditLog.record('session.rename', {
+      ...auditLog.extractRequestMeta(req),
+      oldName: name,
+      newName,
+    });
     res.json({ success: true, name: fullNewName });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -980,6 +1166,19 @@ app.post('/api/sessions/:name/mute', async (req, res) => {
   res.json({ success: true, name, muted });
 });
 
+// Pin/Unpin einer Session. Body: { pinned: bool }. Fremd-Sessions ohne
+// known-Eintrag werden mit 404 abgelehnt (keine Auto-Adoption).
+app.post('/api/sessions/:name/pin', async (req, res) => {
+  const { name } = req.params;
+  if (!SESSION_NAME_RE.test(name)) {
+    return res.status(400).json({ error: 'Invalid session name' });
+  }
+  const pinned = !!(req.body && req.body.pinned);
+  const ok = await knownSessions.setPinned(name, pinned);
+  if (!ok) return res.status(404).json({ error: 'Session not in known-sessions' });
+  res.json({ success: true, name, pinned });
+});
+
 // ── Claude-Code Hooks ────────────────────────────────────────────────────────
 // Claude feuert in ~/.claude/settings.json konfigurierte Hooks für Events
 // wie Stop/Notification/UserPromptSubmit. Jedes Hook-Script POSTet hier
@@ -1063,6 +1262,25 @@ app.ws('/api/terminal/:name', (ws, req) => {
 
   activePtys.add(pty);
 
+  // ── Audit-Log: session.attach + session.detach ────────────────
+  // sessionMeta einmal extrahieren und über die WS-Lifetime cachen,
+  // damit die async cleanup-Handler keinen req-Closure-Zugriff brauchen.
+  // detachRecorded dedupliziert den Dual-Trigger (pty.onExit feuert
+  // meist direkt den ws.close, der dann auch recordDetach rufen will).
+  const sessionMeta = auditLog.extractRequestMeta(req);
+  const attachedAt = Date.now();
+  let detachRecorded = false;
+  const recordDetach = () => {
+    if (detachRecorded) return;
+    detachRecorded = true;
+    auditLog.record('session.detach', {
+      ...sessionMeta,
+      session: sessionName,
+      durationMs: Date.now() - attachedAt,
+    });
+  };
+  auditLog.record('session.attach', { ...sessionMeta, session: sessionName });
+
   pty.onData(data => {
     if (ws.readyState === 1) {
       try { ws.send(data, { binary: true }); } catch {}
@@ -1071,6 +1289,7 @@ app.ws('/api/terminal/:name', (ws, req) => {
 
   pty.onExit(() => {
     activePtys.delete(pty);
+    recordDetach();
     try { ws.close(); } catch {}
   });
 
@@ -1085,6 +1304,7 @@ app.ws('/api/terminal/:name', (ws, req) => {
   });
 
   ws.on('close', () => {
+    recordDetach();
     activePtys.delete(pty);
     try { pty.kill(); } catch {}
   });
