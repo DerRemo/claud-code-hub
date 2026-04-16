@@ -3478,7 +3478,7 @@
           <button id="files-mkdir" title="New Folder">+ Folder</button>
           <button id="files-upload-picker" title="Upload File">+ File</button>
           <button id="files-refresh" title="Refresh">⟳</button>
-          <button id="files-close" title="Schließen">×</button>
+          <button id="files-close" title="Close">×</button>
         </div>
         <div class="files-tree" id="files-tree"></div>
       </aside>
@@ -3529,22 +3529,22 @@
       <h2 id="release-modal-title">Version abschließen</h2>
       <p>Alle Items aus <strong>In Entwicklung</strong> werden nach <strong>Released</strong> verschoben, beide Versions-Header gebumpt, und ein neuer Changelog-Eintrag oben eingefügt. Das ist eine destruktive Aktion — mach vorher einen Git-Commit der ROADMAP.md falls du sie versionierst.</p>
       <div class="form-group">
-        <label class="form-label" for="release-version-input">Release-Version (wird als <code>## Released: vX</code> gesetzt)</label>
-        <input class="form-input" id="release-version-input" autocomplete="off" spellcheck="false" placeholder="z.B. 0.3.0">
+        <label class="form-label" for="release-version-input">Release Version (sets <code>## Released: vX</code>)</label>
+        <input class="form-input" id="release-version-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.3.0">
       </div>
       <div class="form-group">
-        <label class="form-label" for="release-new-dev-input">Neue Dev-Version (wird als <code>## In Entwicklung: vY</code> gesetzt)</label>
-        <input class="form-input" id="release-new-dev-input" autocomplete="off" spellcheck="false" placeholder="z.B. 0.4.0">
+        <label class="form-label" for="release-new-dev-input">New Dev Version (sets <code>## In Entwicklung: vY</code>)</label>
+        <input class="form-input" id="release-new-dev-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.4.0">
       </div>
       <div class="form-group">
-        <label class="form-label" for="release-narrative-input">Changelog-Narrative (optional, freies Markdown — keine H2)</label>
-        <textarea class="form-input" id="release-narrative-input" rows="6" spellcheck="false" placeholder="Was wurde in dieser Version gebaut? Mehrere Absätze sind ok."></textarea>
+        <label class="form-label" for="release-narrative-input">Changelog Narrative (optional, free Markdown — no H2)</label>
+        <textarea class="form-input" id="release-narrative-input" rows="6" spellcheck="false" placeholder="What was built in this version? Multiple paragraphs are fine."></textarea>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="release-cancel">Abbrechen</button>
+        <button class="btn btn-ghost" type="button" id="release-cancel">Cancel</button>
         <button class="btn btn-primary" type="button" id="release-submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Abschließen
+          Complete
         </button>
       </div>
     </div>
@@ -3552,26 +3552,26 @@
 
   <div class="modal-overlay" id="new-project-modal" role="dialog" aria-modal="true" aria-labelledby="new-project-title">
     <div class="modal">
-      <h2 id="new-project-title">Neues Projekt anlegen</h2>
-      <p>Lege eine neue <code>ROADMAP.md</code> unter einem bestehenden Verzeichnis an. Sie wird als Projekt registriert und taucht sofort im Projekte-Tab auf.</p>
+      <h2 id="new-project-title">Create New Project</h2>
+      <p>Create a new <code>ROADMAP.md</code> in an existing directory. It will be registered as a project and appear in the Projects tab.</p>
       <div class="form-group">
-        <label class="form-label">Anzeigename</label>
-        <input class="form-input" id="new-project-name" placeholder="z.B. Kalvo Backend" autocomplete="off" spellcheck="false" maxlength="80">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" id="new-project-name" placeholder="e.g. Kalvo Backend" autocomplete="off" spellcheck="false" maxlength="80">
       </div>
       <div class="form-group">
-        <label class="form-label">Projektverzeichnis</label>
+        <label class="form-label">Project Directory</label>
         <div class="tree-picker" id="new-project-tree-picker">
           <div class="tree-selected" id="new-project-tree-selected" dir="rtl">~</div>
           <div class="tree-list" id="new-project-tree-root">
-            <div class="tree-empty">Lädt…</div>
+            <div class="tree-empty">Loading…</div>
           </div>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="new-project-cancel">Abbrechen</button>
+        <button class="btn btn-ghost" type="button" id="new-project-cancel">Cancel</button>
         <button class="btn btn-primary" type="button" id="new-project-submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Anlegen
+          Create
         </button>
       </div>
     </div>
@@ -3581,17 +3581,17 @@
        aus der Terminal-Toolbar, schreibt direkt ins Projekt-Backlog. -->
   <div class="modal-overlay" id="idea-modal" role="dialog" aria-modal="true" aria-labelledby="idea-modal-title">
     <div class="modal">
-      <h2 id="idea-modal-title">Idee notieren</h2>
+      <h2 id="idea-modal-title">Capture Idea</h2>
       <p>Wird ins Backlog von <strong id="idea-modal-project">—</strong> geschrieben.</p>
       <div class="form-group">
-        <label class="form-label" for="idea-modal-input">Kurze Beschreibung</label>
-        <input type="text" class="form-input" id="idea-modal-input" maxlength="500" autocomplete="off" spellcheck="false" placeholder="z.B. Sidebar sollte sich merken welche Session zuletzt offen war">
+        <label class="form-label" for="idea-modal-input">Short Description</label>
+        <input type="text" class="form-input" id="idea-modal-input" maxlength="500" autocomplete="off" spellcheck="false" placeholder="e.g. Sidebar should remember which session was last open">
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="idea-modal-cancel">Schließen</button>
+        <button class="btn btn-ghost" type="button" id="idea-modal-cancel">Close</button>
         <button class="btn btn-primary" type="button" id="idea-modal-save">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Speichern
+          Save
         </button>
       </div>
     </div>
@@ -3599,23 +3599,23 @@
 
   <div class="modal-overlay" id="new-session-modal" role="dialog" aria-modal="true" aria-labelledby="new-session-title">
     <div class="modal">
-      <h2 id="new-session-title">Neue Session starten</h2>
+      <h2 id="new-session-title">Start New Session</h2>
       <p>Starte eine neue Claude Code Session auf deinem Mac mini.</p>
       <div class="form-group">
         <label class="form-label">Session Name</label>
-        <input class="form-input" id="new-session-name" placeholder="z.B. kalvo-feature" autocomplete="off" spellcheck="false">
+        <input class="form-input" id="new-session-name" placeholder="e.g. kalvo-feature" autocomplete="off" spellcheck="false">
       </div>
       <div class="form-group">
-        <label class="form-label">Projektverzeichnis</label>
+        <label class="form-label">Project Directory</label>
         <div class="tree-picker" id="tree-picker">
           <div class="tree-selected" id="tree-selected" dir="rtl">~</div>
           <div class="tree-list" id="tree-root">
-            <div class="tree-empty">Lädt…</div>
+            <div class="tree-empty">Loading…</div>
           </div>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Startbefehl</label>
+        <label class="form-label">Start Command</label>
         <div class="select-wrapper">
           <select class="form-input" id="new-session-cmd">
             <option value="claude">claude</option>
@@ -3625,10 +3625,10 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button">Abbrechen</button>
+        <button class="btn btn-ghost" type="button">Cancel</button>
         <button class="btn btn-primary" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          Starten
+          Start
         </button>
       </div>
     </div>
@@ -3637,11 +3637,11 @@
   <!-- Bulk-Kill Modal -->
   <div class="modal-overlay" id="bulk-kill-modal" role="dialog" aria-modal="true" aria-labelledby="bulk-kill-title">
     <div class="modal">
-      <h2 id="bulk-kill-title">Idle-Sessions beenden</h2>
+      <h2 id="bulk-kill-title">Kill Idle Sessions</h2>
       <p id="bulk-kill-body"></p>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="bulk-kill-cancel">Abbrechen</button>
-        <button class="btn btn-danger" type="button" id="bulk-kill-confirm">Alle beenden</button>
+        <button class="btn btn-ghost" type="button" id="bulk-kill-cancel">Cancel</button>
+        <button class="btn btn-danger" type="button" id="bulk-kill-confirm">Kill All</button>
       </div>
     </div>
   </div>
@@ -3650,20 +3650,20 @@
     <div id="adopt-modal" class="modal-overlay">
       <div class="modal adopt-modal">
         <div class="modal-header">
-          <h2>Session adoptieren</h2>
+          <h2>Adopt Session</h2>
           <button class="modal-close" onclick="closeAdoptModal()">✕</button>
         </div>
         <div class="modal-body">
           <p class="adopt-intro">
-            Die fremde tmux-Session <code id="adopt-source-name"></code> wird auf
-            <code>cc-&lt;name&gt;</code> umbenannt und ab sofort vom Hub verwaltet.
+            The foreign tmux session <code id="adopt-source-name"></code> will be renamed to
+            <code>cc-&lt;name&gt;</code> and managed by the Hub from now on.
           </p>
-          <label for="adopt-new-name">Neuer Name (ohne cc-Prefix)</label>
+          <label for="adopt-new-name">New Name (without cc- prefix)</label>
           <input id="adopt-new-name" type="text" class="input" autocomplete="off" />
         </div>
         <div class="modal-footer">
-          <button class="btn btn-ghost" onclick="closeAdoptModal()">Abbrechen</button>
-          <button class="btn btn-primary" onclick="submitAdopt()">Adoptieren</button>
+          <button class="btn btn-ghost" onclick="closeAdoptModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitAdopt()">Adopt</button>
         </div>
       </div>
     </div>
@@ -5668,7 +5668,7 @@
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-primary btn-sm" data-action="adopt">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
-                Adoptieren
+                Adopt
               </button>
               <button class="btn btn-ghost btn-sm" data-action="connect">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
@@ -6780,7 +6780,7 @@
           node.classList.add('expanded');
           const children = document.createElement('div');
           children.className = 'tree-children';
-          children.innerHTML = '<div class="tree-empty">Lädt…</div>';
+          children.innerHTML = '<div class="tree-empty">Loading…</div>';
           node.appendChild(children);
 
           try {
@@ -6804,7 +6804,7 @@
       async function init() {
         const root = rootEl();
         if (!root) return;
-        root.innerHTML = '<div class="tree-empty">Lädt…</div>';
+        root.innerHTML = '<div class="tree-empty">Loading…</div>';
         try {
           const data = await fetchBrowse('~');
           setSelected(data.path);
@@ -6913,11 +6913,11 @@
       const displayName = document.getElementById('new-project-name').value.trim();
       const path = projectTreePicker.getSelected();
       if (!displayName) {
-        showToast('Bitte Anzeigenamen eingeben', 'error');
+        showToast('Please enter a display name', 'error');
         return;
       }
       if (!path) {
-        showToast('Bitte Projektverzeichnis auswählen', 'error');
+        showToast('Please select a project directory', 'error');
         return;
       }
       btn.disabled = true;
@@ -7782,7 +7782,7 @@
         const body = document.getElementById('preview-body');
         document.getElementById('preview-name').textContent = entry.name || relPath.split('/').pop();
         document.getElementById('preview-size').textContent = entry.size != null ? formatSize(entry.size) : '';
-        body.innerHTML = '<div class="preview-oversize">Lädt…</div>';
+        body.innerHTML = '<div class="preview-oversize">Loading…</div>';
         modal.classList.add('open');
         try {
           const res = await fetch(`/api/projects/${projectId}/files/content?path=${encodeURIComponent(relPath)}`, {
@@ -8281,7 +8281,7 @@
         <span class="size" id="preview-size"></span>
         <span class="spacer"></span>
         <button id="preview-copy-path" title="Copy Path">Path</button>
-        <button id="preview-close" title="Schließen">×</button>
+        <button id="preview-close" title="Close">×</button>
       </div>
       <div class="preview-body" id="preview-body"></div>
     </div>
