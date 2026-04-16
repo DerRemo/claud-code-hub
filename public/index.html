@@ -641,54 +641,219 @@
     body:not([data-active-tab="sessions"]):not([data-active-tab="projects"]) [data-tab-scope="sessions projects"] { display: none !important; }
 
     /* ── Usage-View ────────────────────────────────────────────────── */
-    .usage-view { display: flex; flex-direction: column; gap: 24px; }
-    .usage-summary {
+    .usage-view { display: flex; flex-direction: column; gap: 20px; }
+    .usage-empty {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    /* Summary cards row */
+    .usage-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .usage-summary-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 28px 32px;
+      padding: 20px 22px;
       box-shadow: var(--shadow-card);
     }
-    .usage-summary-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-    .usage-summary-total {
+    .usage-summary-card .usc-value {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 38px;
+      font-size: 32px;
       font-weight: 700;
       color: var(--teal);
       line-height: 1;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
     }
-    .usage-summary-breakdown {
-      font-size: 13px;
-      color: var(--text-secondary);
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
-    }
-    .usage-summary-breakdown span strong {
-      color: var(--text-primary);
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
+    .usage-summary-card .usc-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      color: var(--text-muted);
+      line-height: 1.3;
     }
 
-    .usage-table {
-      width: 100%;
-      border-collapse: collapse;
+    /* Limit status card */
+    .usage-limit-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      overflow: hidden;
+      padding: 20px 24px;
       box-shadow: var(--shadow-card);
+    }
+    .usage-limit-card .ulc-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+    .usage-limit-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .usage-limit-row:last-of-type { margin-bottom: 0; }
+    .usage-limit-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      width: 28px;
+      flex-shrink: 0;
+    }
+    .usage-limit-bar {
+      flex: 1;
+      height: 10px;
+      background: var(--bg-elevated);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .usage-limit-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.4s ease;
+    }
+    .usage-limit-fill.usage-limit-green { background: var(--teal); }
+    .usage-limit-fill.usage-limit-amber { background: var(--amber); }
+    .usage-limit-fill.usage-limit-red   { background: var(--red); }
+    .usage-limit-pct {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      width: 42px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .usage-limit-pct.usage-limit-green { color: var(--teal); }
+    .usage-limit-pct.usage-limit-amber { color: var(--amber); }
+    .usage-limit-pct.usage-limit-red   { color: var(--red); }
+    .usage-limit-reset {
+      font-size: 13px;
+      flex-shrink: 0;
+      min-width: 90px;
+      text-align: right;
+    }
+    .usage-limit-reset.usage-limit-green { color: var(--teal); }
+    .usage-limit-reset.usage-limit-amber { color: var(--amber); }
+    .usage-limit-reset.usage-limit-red   { color: var(--red); }
+    .usage-limit-reset.usage-limit-urgent { font-size: 16px; font-weight: 600; }
+    .usage-limit-peaks {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Two-column layout */
+    .usage-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    /* Section card (generic) */
+    .usage-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-card);
+    }
+    .usage-section .us-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    /* Heatmap */
+    .usage-heatmap-wrap { overflow-x: auto; }
+    .usage-heatmap {
+      display: grid;
+      grid-template-columns: 32px repeat(24, 16px);
+      grid-auto-rows: 16px;
+      gap: 2px;
+    }
+    .usage-heatmap .hm-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .usage-heatmap .hm-hour-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .usage-heatmap .hm-cell {
+      border-radius: 2px;
+      background: var(--bg-elevated);
+    }
+
+    /* Horizontal bar lists (projects, tools) */
+    .usage-bar-list { display: flex; flex-direction: column; gap: 8px; }
+    .usage-bar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .usage-bar-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+      width: 110px;
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .usage-bar-track {
+      flex: 1;
+      height: 20px;
+      background: var(--bg-elevated);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .usage-bar-fill {
+      height: 100%;
+      background: var(--teal);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .usage-bar-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-width: 50px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* 30-day table */
+    .usage-table {
+      width: 100%;
+      border-collapse: collapse;
     }
     .usage-table thead th {
       text-align: left;
-      padding: 14px 18px;
+      padding: 10px 14px;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1.3px;
@@ -699,8 +864,8 @@
     }
     .usage-table thead th.num { text-align: right; }
     .usage-table tbody td {
-      padding: 12px 18px;
-      font-size: 13px;
+      padding: 8px 14px;
+      font-size: 12px;
       border-bottom: 1px solid var(--border-subtle);
       font-family: 'JetBrains Mono', monospace;
       color: var(--text-primary);
@@ -711,14 +876,84 @@
       color: var(--text-muted);
       font-style: italic;
     }
-    .usage-empty {
-      padding: 48px 24px;
-      text-align: center;
+    .usage-table-wrap {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    /* Arbeitsweise stacked bar */
+    .usage-workstyle-bar {
+      display: flex;
+      height: 28px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .usage-workstyle-bar .ws-tool {
+      background: var(--teal);
+      transition: width 0.3s ease;
+    }
+    .usage-workstyle-bar .ws-direct {
+      background: var(--bg-elevated);
+      transition: width 0.3s ease;
+    }
+    .usage-workstyle-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
       color: var(--text-muted);
-      font-size: 14px;
-      background: var(--bg-card);
-      border: 1px dashed var(--border);
-      border-radius: var(--radius-md);
+    }
+    .usage-workstyle-labels span strong {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-secondary);
+    }
+
+    /* Produktivitaet row */
+    .usage-prod-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .usage-prod-item {
+      flex: 1;
+      min-width: 140px;
+      text-align: center;
+    }
+    .usage-prod-item .up-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .usage-prod-item .up-value.up-added { color: var(--teal); }
+    .usage-prod-item .up-value.up-removed { color: var(--red); }
+    .usage-prod-item .up-value.up-time { color: var(--text-secondary); }
+    .usage-prod-item .up-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      color: var(--text-muted);
+    }
+
+    /* Session card limit badge */
+    .usage-limit-badge {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .usage-limit-badge.usage-limit-green { color: var(--teal); }
+    .usage-limit-badge.usage-limit-amber { color: var(--amber); }
+    .usage-limit-badge.usage-limit-red   { color: var(--red); }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .usage-summary-grid { grid-template-columns: 1fr 1fr; }
+      .usage-two-col { grid-template-columns: 1fr; }
+      .usage-summary-card .usc-value { font-size: 24px; }
+      .usage-heatmap-wrap { margin: 0 -12px; padding: 0 12px; }
+      .usage-bar-name { width: 80px; }
+      .usage-prod-row { gap: 16px; }
+      .usage-prod-item .up-value { font-size: 18px; }
     }
 
     /* ── Command-Output-Block ─────────────────────────────────────────
@@ -1612,13 +1847,7 @@
       margin-left: 4px;
     }
 
-    .usage-5h-badge {
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-    .usage-5h-green { color: var(--accent); }
-    .usage-5h-amber { color: var(--amber); }
-    .usage-5h-red   { color: var(--red); }
+    /* usage-5h-* badges replaced by usage-limit-badge in Usage-View CSS */
 
     .session-actions {
       display: flex;
@@ -3656,10 +3885,42 @@
       if (p === null || p === undefined) return '—';
       return `${p}% ctx`;
     }
-    function formatUsage5h(pct) {
-      if (pct === null || pct === undefined) return null;
-      const cls = pct >= 85 ? 'usage-5h-red' : pct >= 60 ? 'usage-5h-amber' : 'usage-5h-green';
-      return `<span class="usage-5h-badge ${cls}">${pct}%</span>`;
+    function formatCurrency(usd) {
+      if (usd == null) return '—';
+      return '$' + usd.toFixed(2);
+    }
+    function formatResetCountdown(unixTs) {
+      if (!unixTs) return '';
+      const diff = unixTs * 1000 - Date.now();
+      if (diff <= 0) return 'Jetzt';
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      if (hours >= 24) {
+        const days = Math.floor(hours / 24);
+        const remHours = hours % 24;
+        return `${days}d ${remHours}h`;
+      }
+      return `${hours}h ${minutes}m`;
+    }
+    function limitColorClass(pct) {
+      if (pct >= 85) return 'usage-limit-red';
+      if (pct >= 60) return 'usage-limit-amber';
+      return 'usage-limit-green';
+    }
+    function formatLimitsBadge(limits) {
+      if (!limits || limits.pct5h == null) return '';
+      const c5 = limitColorClass(limits.pct5h);
+      const c7 = limitColorClass(limits.pct7d ?? 0);
+      let html = `5h <span class="usage-limit-badge ${c5}">${limits.pct5h}%</span>`;
+      if (limits.pct7d != null) html += ` · 7d <span class="usage-limit-badge ${c7}">${limits.pct7d}%</span>`;
+      return html;
+    }
+    function formatLimitsTooltip(limits) {
+      if (!limits) return '';
+      const parts = [];
+      if (limits.resets5h) parts.push('5h Reset ' + formatResetCountdown(limits.resets5h));
+      if (limits.resets7d) parts.push('7d Reset ' + formatResetCountdown(limits.resets7d));
+      return parts.join(' · ') || 'Nutzungslimits';
     }
     function formatContextTooltip(s) {
       if (s.contextTokens == null) return 'Noch keine Claude-Code-Daten im cwd';
@@ -4813,67 +5074,175 @@
     }
 
     // ── Usage-View ─────────────────────────────────────────────────
+    let _usageCountdownInterval = null;
     async function renderUsage() {
       const view = document.getElementById('usage-view');
       view.innerHTML = '<div class="usage-empty">Lade Usage-Daten…</div>';
+      if (_usageCountdownInterval) { clearInterval(_usageCountdownInterval); _usageCountdownInterval = null; }
       try {
-        const res = await fetch('/api/usage/history?days=30', { headers: apiHeaders() });
-        if (res.status === 401) {
-          clearToken();
-          showLoginModal();
+        const hdrs = apiHeaders();
+        const [histRes, limRes, costRes] = await Promise.all([
+          fetch('/api/usage/history?days=30', { headers: hdrs }),
+          fetch('/api/usage/limits?days=7', { headers: hdrs }).catch(() => null),
+          fetch('/api/usage/costs', { headers: hdrs }).catch(() => null),
+        ]);
+        if (histRes.status === 401) {
+          clearToken(); showLoginModal();
           view.innerHTML = '<div class="usage-empty">Auth abgelaufen.</div>';
           return;
         }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        if (!histRes.ok) throw new Error(`HTTP ${histRes.status}`);
+        const hist = await histRes.json();
+        const lim = limRes && limRes.ok ? await limRes.json() : null;
+        const costs = costRes && costRes.ok ? await costRes.json() : null;
 
-        if (!data.monthTotal && data.days.every(d => !d.input && !d.output)) {
-          view.innerHTML = `
-            <div class="usage-empty">
-              Noch keine Daten vorhanden — Claude Code war diesen Monat noch nicht aktiv.
-            </div>`;
+        if (!hist.monthTotal && hist.days.every(d => !d.input && !d.output) && !costs) {
+          view.innerHTML = '<div class="usage-empty">Noch keine Daten vorhanden — Claude Code war diesen Monat noch nicht aktiv.</div>';
           return;
         }
 
-        const modelEntries = Object.entries(data.monthByModel)
-          .filter(([m, v]) => v > 0 && m !== '<synthetic>')
-          .sort((a, b) => b[1] - a[1]);
-        const breakdown = modelEntries.length
-          ? modelEntries.map(([m, v]) =>
-              `<span>${escapeHtml(m)}: <strong>${formatTokensCompact(v)}</strong></span>`
-            ).join('')
-          : '<span>—</span>';
+        // ── Summary Cards ──
+        const costVal = costs ? formatCurrency(costs.totalUsd) : '—';
+        const sessVal = hist.monthSessions ?? '—';
+        const cacheVal = hist.cacheRate ? `${hist.cacheRate.pct}%` : '—';
+        const autonomyVal = hist.workStyle
+          ? `${Math.round((hist.workStyle.toolUse / (hist.workStyle.total || 1)) * 100)}%`
+          : '—';
 
-        const rows = data.days.map(d => {
+        // ── Limit Status ──
+        let limitHtml = '';
+        if (lim && lim.current) {
+          const cur = lim.current;
+          const c5 = limitColorClass(cur.pct5h ?? 0);
+          const c7 = limitColorClass(cur.pct7d ?? 0);
+          const urgent5 = (cur.pct5h ?? 0) > 90 ? ' usage-limit-urgent' : '';
+          const urgent7 = (cur.pct7d ?? 0) > 90 ? ' usage-limit-urgent' : '';
+          limitHtml = `
+            <div class="usage-limit-card">
+              <div class="ulc-title">Limit-Status</div>
+              <div class="usage-limit-row">
+                <span class="usage-limit-label">5h</span>
+                <div class="usage-limit-bar"><div class="usage-limit-fill ${c5}" style="width:${Math.min(cur.pct5h ?? 0, 100)}%"></div></div>
+                <span class="usage-limit-pct ${c5}">${cur.pct5h ?? 0}%</span>
+                <span class="usage-limit-reset ${c5}${urgent5}" data-reset-ts="${cur.resets5h || ''}">Reset ${formatResetCountdown(cur.resets5h)}</span>
+              </div>
+              <div class="usage-limit-row">
+                <span class="usage-limit-label">7d</span>
+                <div class="usage-limit-bar"><div class="usage-limit-fill ${c7}" style="width:${Math.min(cur.pct7d ?? 0, 100)}%"></div></div>
+                <span class="usage-limit-pct ${c7}">${cur.pct7d ?? 0}%</span>
+                <span class="usage-limit-reset ${c7}${urgent7}" data-reset-ts="${cur.resets7d || ''}">Reset ${formatResetCountdown(cur.resets7d)}</span>
+              </div>
+              ${(lim.peaks5h || lim.peaks7d) ? `<div class="usage-limit-peaks">Letzte 7 Tage: ${lim.peaks5h ?? 0}x &gt;90% (5h) · ${lim.peaks7d ?? 0}x &gt;90% (7d)</div>` : ''}
+            </div>`;
+        } else {
+          limitHtml = `<div class="usage-limit-card"><div class="ulc-title">Limit-Status</div><div style="color:var(--text-muted);font-size:13px">Keine Limit-Daten vorhanden</div></div>`;
+        }
+
+        // ── Heatmap ──
+        let heatmapHtml = '';
+        if (hist.heatmap && hist.heatmap.length) {
+          const maxTok = Math.max(...hist.heatmap.map(h => h.tokens), 1);
+          const heatMap = {};
+          hist.heatmap.forEach(h => { heatMap[`${h.dow}-${h.hour}`] = h.tokens; });
+          const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+          // Header row
+          let cells = '<div class="hm-label"></div>';
+          for (let h = 0; h < 24; h++) cells += `<div class="hm-hour-label">${h % 6 === 0 ? h : ''}</div>`;
+          // Data rows
+          for (let d = 0; d < 7; d++) {
+            cells += `<div class="hm-label">${dayLabels[d]}</div>`;
+            for (let h = 0; h < 24; h++) {
+              const tok = heatMap[`${d}-${h}`] || 0;
+              const ratio = tok / maxTok;
+              const opacity = tok === 0 ? 0 : ratio < 0.15 ? 0.15 : ratio < 0.35 ? 0.35 : ratio < 0.6 ? 0.6 : 1.0;
+              const bg = tok === 0 ? '' : `background:rgba(45,212,191,${opacity})`;
+              cells += `<div class="hm-cell" style="${bg}" title="${dayLabels[d]} ${h}:00 — ${formatTokensCompact(tok)}"></div>`;
+            }
+          }
+          heatmapHtml = `<div class="usage-section"><div class="us-title">Aktivitaet (Heatmap)</div><div class="usage-heatmap-wrap"><div class="usage-heatmap">${cells}</div></div></div>`;
+        }
+
+        // ── Top Projects ──
+        let projectsHtml = '';
+        if (hist.byProject && hist.byProject.length) {
+          const maxP = hist.byProject[0].tokens || 1;
+          const bars = hist.byProject.slice(0, 8).map(p => `
+            <div class="usage-bar-item">
+              <span class="usage-bar-name" title="${escapeHtml(p.path || p.project)}">${escapeHtml(p.project)}</span>
+              <div class="usage-bar-track"><div class="usage-bar-fill" style="width:${Math.round((p.tokens / maxP) * 100)}%"></div></div>
+              <span class="usage-bar-count">${formatTokensCompact(p.tokens)}</span>
+            </div>`).join('');
+          projectsHtml = `<div class="usage-section"><div class="us-title">Top Projekte</div><div class="usage-bar-list">${bars}</div></div>`;
+        }
+
+        // ── 30-Day Table ──
+        const rows = hist.days.map(d => {
           const total = d.input + d.output;
           const empty = total === 0 ? ' class="empty"' : '';
-          return `
-            <tr${empty}>
-              <td>${d.date}</td>
-              <td class="num">${formatTokensCompact(d.input)}</td>
-              <td class="num">${formatTokensCompact(d.output)}</td>
-              <td class="num">${total ? formatTokensCompact(total) : '—'}</td>
-            </tr>`;
+          const costCell = d.cost != null ? formatCurrency(d.cost) : '—';
+          const sessCell = hist.dailySessions?.[d.date] ?? '—';
+          return `<tr${empty}><td>${d.date}</td><td class="num">${formatTokensCompact(d.input)}</td><td class="num">${formatTokensCompact(d.output)}</td><td class="num">${total ? formatTokensCompact(total) : '—'}</td><td class="num">${costCell}</td><td class="num">${sessCell}</td></tr>`;
         }).join('');
+        const tableHtml = `<div class="usage-section"><div class="us-title">30-Tage-Tabelle</div><div class="usage-table-wrap"><table class="usage-table"><thead><tr><th>Datum</th><th class="num">Input</th><th class="num">Output</th><th class="num">Gesamt</th><th class="num">Kosten</th><th class="num">Sessions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 
+        // ── Tool Usage ──
+        let toolHtml = '';
+        if (hist.toolUsage && hist.toolUsage.length) {
+          const maxT = hist.toolUsage[0].count || 1;
+          const bars = hist.toolUsage.slice(0, 10).map(t => `
+            <div class="usage-bar-item">
+              <span class="usage-bar-name">${escapeHtml(t.name)}</span>
+              <div class="usage-bar-track"><div class="usage-bar-fill" style="width:${Math.round((t.count / maxT) * 100)}%"></div></div>
+              <span class="usage-bar-count">${t.count}</span>
+            </div>`).join('');
+          toolHtml = `<div class="usage-section"><div class="us-title">Tool-Nutzung</div><div class="usage-bar-list">${bars}</div></div>`;
+        }
+
+        // ── Arbeitsweise ──
+        let workHtml = '';
+        if (hist.workStyle && hist.workStyle.total) {
+          const ws = hist.workStyle;
+          const toolPct = Math.round((ws.toolUse / ws.total) * 100);
+          const directPct = 100 - toolPct;
+          workHtml = `<div class="usage-section"><div class="us-title">Arbeitsweise</div><div class="usage-workstyle-bar"><div class="ws-tool" style="width:${toolPct}%"></div><div class="ws-direct" style="width:${directPct}%"></div></div><div class="usage-workstyle-labels"><span>Tool-Ketten <strong>${toolPct}%</strong> (${ws.toolUse})</span><span>Direkte Antworten <strong>${directPct}%</strong> (${ws.endTurn})</span></div></div>`;
+        }
+
+        // ── Produktivitaet ──
+        let prodHtml = '';
+        if (costs) {
+          const apiH = costs.totalApiDurationMs ? `${Math.round(costs.totalApiDurationMs / 3600000)}h` : '—';
+          prodHtml = `<div class="usage-section"><div class="us-title">Produktivitaet</div><div class="usage-prod-row"><div class="usage-prod-item"><div class="up-value up-added">+${(costs.totalLinesAdded || 0).toLocaleString()}</div><div class="up-label">Zeilen hinzugefuegt</div></div><div class="usage-prod-item"><div class="up-value up-removed">-${(costs.totalLinesRemoved || 0).toLocaleString()}</div><div class="up-label">Zeilen entfernt</div></div><div class="usage-prod-item"><div class="up-value up-time">${apiH}</div><div class="up-label">API-Zeit</div></div></div></div>`;
+        }
+
+        // ── Assemble ──
         view.innerHTML = `
-          <div class="usage-summary">
-            <div class="usage-summary-label">Dieser Monat</div>
-            <div class="usage-summary-total">${formatTokensCompact(data.monthTotal)} tokens</div>
-            <div class="usage-summary-breakdown">${breakdown}</div>
+          <div class="usage-summary-grid">
+            <div class="usage-summary-card"><div class="usc-value">${costVal}</div><div class="usc-label">Kosten<br>Monat</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${sessVal}</div><div class="usc-label">Sessions<br>Monat</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${cacheVal}</div><div class="usc-label">Cache-Rate<br>Monat</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${autonomyVal}</div><div class="usc-label">Autonom<br>Tool-Ketten</div></div>
           </div>
-          <table class="usage-table">
-            <thead>
-              <tr>
-                <th>Datum</th>
-                <th class="num">Input</th>
-                <th class="num">Output</th>
-                <th class="num">Gesamt</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
+          ${limitHtml}
+          <div class="usage-two-col">
+            ${heatmapHtml}
+            ${projectsHtml}
+          </div>
+          <div class="usage-two-col">
+            ${tableHtml}
+            ${toolHtml}
+          </div>
+          ${workHtml}
+          ${prodHtml}
         `;
+
+        // Countdown updater
+        _usageCountdownInterval = setInterval(() => {
+          view.querySelectorAll('.usage-limit-reset[data-reset-ts]').forEach(el => {
+            const ts = parseInt(el.dataset.resetTs, 10);
+            if (ts) el.textContent = 'Reset ' + formatResetCountdown(ts);
+          });
+        }, 60000);
+
       } catch (e) {
         view.innerHTML = `<div class="usage-empty">Fehler beim Laden: ${escapeHtml(e.message)}</div>`;
       }
@@ -5220,10 +5589,10 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>
                 ${formatContextPct(s.contextPct)}
               </div>
-              ${formatUsage5h(s.usagePct5h) ? `
-              <div class="session-meta-item" title="5h-Nutzungslimit">
+              ${s.limits ? `
+              <div class="session-meta-item" title="${escapeHtml(formatLimitsTooltip(s.limits))}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                5h ${formatUsage5h(s.usagePct5h)}
+                ${formatLimitsBadge(s.limits)}
               </div>` : ''}
               ${renderGitBadge(s.git)}
             </div>
