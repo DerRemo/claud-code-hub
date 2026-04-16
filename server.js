@@ -13,7 +13,8 @@ import { dirname, join, resolve, sep } from 'path';
 import { readdirSync } from 'fs';
 import { mkdir as fsMkdir } from 'fs/promises';
 import { homedir } from 'os';
-import { getCurrentContext, getDailyUsage } from './lib/usage.js';
+import { getCurrentContext, getDailyUsageV2 } from './lib/usage.js';
+import * as usageLimits from './lib/usage-limits.js';
 import * as knownSessions from './lib/known-sessions.js';
 import * as cfAccess from './lib/cf-access.js';
 import * as auditLog from './lib/audit-log.js';
@@ -347,39 +348,6 @@ function getTmuxSessions() {
   }
 }
 
-// ── Helper: pane preview mit kleinem TTL-Cache ───────────────────────────────
-// Ohne Cache macht jedes Dashboard-Polling N+1 execFile-Calls. Bei 5 s Polling
-// und mehreren Sessions summiert sich das schnell. 2 s Cache ist ein sinnvoller
-// Tradeoff zwischen Frische und Load.
-const previewCache = new Map();
-const PREVIEW_TTL_MS = 2000;
-
-function getSessionPreview(sessionName, lines = 8) {
-  // Cache-Key inkludiert `lines`, sonst würden Calls mit verschiedenen
-  // Buffer-Größen (Hash-Vergleich vs Card-Preview) sich gegenseitig
-  // überschreiben — oder schlimmer: eine kleinere Anfrage bekommt die
-  // größere zurück und vice versa.
-  const key = `${sessionName}|${lines}`;
-  const cached = previewCache.get(key);
-  if (cached && Date.now() - cached.ts < PREVIEW_TTL_MS) return cached.value;
-  try {
-    const output = execFileSync(TMUX, [
-      'capture-pane', '-t', sessionName, '-p', '-S', `-${lines}`,
-    ], { encoding: 'utf-8', timeout: 3000 }).trim();
-    previewCache.set(key, { value: output, ts: Date.now() });
-    return output;
-  } catch {
-    return '';
-  }
-}
-
-function invalidatePreview(name) {
-  // Alle Cache-Einträge für diese Session (egal welche line-Count) entfernen.
-  for (const key of Array.from(previewCache.keys())) {
-    if (key === name || key.startsWith(name + '|')) previewCache.delete(key);
-  }
-}
-
 // ── Helper: git-status pro Session-cwd mit TTL-Cache ─────────────────────────
 // Gleiches Cache-TTL wie pane-preview (2s) — jeder Dashboard-Poll löst
 // sonst einen execFile pro Session aus. Wenn der cwd kein git-Repo ist
@@ -433,17 +401,6 @@ function parseGitStatus(raw) {
   return { branch, dirty, ahead, behind };
 }
 
-// ── Usage-Limit-Parsing ──────────────────────────────────────────────────────
-// Extrahiert den 5h-Nutzungsanteil aus der Claude Code Status-Line.
-// Format in der letzten Terminalzeile: "5h ####- 77%"
-// Gibt null zurück wenn das Pattern nicht gefunden wird (Session ohne Claude
-// oder Pane noch nicht sichtbar).
-function parseUsagePct5h(preview) {
-  if (!preview) return null;
-  const m = /5h\s+[#\-]+\s+(\d+)%/.exec(preview);
-  return m ? parseInt(m[1], 10) : null;
-}
-
 // ── Hub-Env für Claude-Hooks ─────────────────────────────────────────────────
 // Injiziert beim tmux new-session Variablen, damit der Claude-Hook (in
 // ~/.claude/settings.json) per curl an /api/hooks/:event POSTen kann.
@@ -484,7 +441,6 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // Activity-Detection ab, weil dafür auch der capture-pane-Call entfällt).
 app.get('/api/sessions', (req, res) => {
   const live = getTmuxSessions();
-  const withActivity = req.query.preview !== '0';
   const liveByName = new Map(live.map(s => [s.name, s]));
   const known = knownSessions.list();
   const knownByName = new Map(known.map(e => [e.name, e]));
@@ -518,20 +474,28 @@ app.get('/api/sessions', (req, res) => {
       status: 'dormant',
     }));
 
-  // Enrichment: Activity kommt ausschließlich aus dem Hook-State. Preview
-  // wird nur noch für parseUsagePct5h gezogen (5h-Quota aus der Status-
-  // Line). Sessions ohne frischen Hook zeigen activity:`unknown` → Label
-  // "Aktiv" im Dashboard.
+  // Enrichment: Activity kommt ausschließlich aus dem Hook-State. Limits
+  // und Costs kommen aus dem StatusLine-Hook. Sessions ohne frischen Hook
+  // zeigen activity:`unknown` → Label "Aktiv" im Dashboard.
   const enrich = (s) => {
-    let preview = null;
-    if (withActivity && s.status !== 'dormant') {
-      preview = getSessionPreview(s.name);
-    }
     const hookActivity = attention.getHookActivity(s.name);
+    const sl = usageLimits.getSessionStatusline(s.name);
     const base = {
       ...s,
       activity: hookActivity || 'unknown',
-      usagePct5h: preview !== null ? parseUsagePct5h(preview) : null,
+      limits: sl ? {
+        pct5h: sl.pct5h,
+        pct7d: sl.pct7d,
+        resets5h: sl.resets5h,
+        resets7d: sl.resets7d,
+        updatedAt: sl.updatedAt,
+      } : null,
+      cost: sl ? {
+        totalUsd: sl.costUsd,
+        durationMs: sl.durationMs,
+        linesAdded: sl.linesAdded,
+        linesRemoved: sl.linesRemoved,
+      } : null,
     };
     // attached-Flag bleibt in s.attached (UI-Anzeige), wird aber nicht mehr
     // zur Attention-Suppression verwendet — siehe Device-Presence in der Push-Schicht.
@@ -571,12 +535,42 @@ app.get('/api/usage/history', async (req, res) => {
     return res.json(usageCache.data);
   }
   try {
-    const data = await getDailyUsage({ days });
+    const data = await getDailyUsageV2({ days });
     usageCache = { ts: now, key, data };
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: 'Failed to compute usage', detail: e.message });
   }
+});
+
+// Limit-History (StatusLine-basiert, Tages-Aggregation).
+let limitsCache = { ts: 0, data: null };
+app.get('/api/usage/limits', async (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 1), 30);
+  const now = Date.now();
+  const key = `days=${days}`;
+  if (limitsCache.data && limitsCache.key === key && now - limitsCache.ts < 30_000) {
+    return res.json(limitsCache.data);
+  }
+  try {
+    const data = await usageLimits.getLimitHistory({ days });
+    limitsCache = { ts: now, key, data };
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to read limit history', detail: e.message });
+  }
+});
+
+// Aktuelle Kosten aller Sessions (aus StatusLine-State).
+let costsCache = { ts: 0, data: null };
+app.get('/api/usage/costs', (_req, res) => {
+  const now = Date.now();
+  if (costsCache.data && now - costsCache.ts < 10_000) {
+    return res.json(costsCache.data);
+  }
+  const data = usageLimits.getAllSessionCosts();
+  costsCache = { ts: now, data };
+  res.json(data);
 });
 
 // ── Projekt-Verwaltung (Phase 1 Step 2b) ──────────────────────────────
@@ -962,7 +956,7 @@ app.post('/api/sessions', async (req, res) => {
         directory: dir,
         command: cmd,
       });
-      return res.status(201).json({ ...created, preview: getSessionPreview(sessionName) });
+      return res.status(201).json(created);
     }
   }
   res.status(500).json({
@@ -978,8 +972,8 @@ app.delete('/api/sessions/:name', (req, res) => {
   }
   try {
     execFileSync(TMUX, ['kill-session', '-t', name], { encoding: 'utf-8', timeout: 5000 });
-    invalidatePreview(name);
     attention.forget(name);
+    usageLimits.forget(name);
     // Alias-Einträge aufräumen, die auf diese Session zeigten.
     for (const [k, v] of hookAlias.entries()) {
       if (v === name || k === name) hookAlias.delete(k);
@@ -1007,8 +1001,8 @@ app.patch('/api/sessions/:name', async (req, res) => {
   const fullNewName = newName.startsWith(SESSION_PREFIX) ? newName : SESSION_PREFIX + newName;
   try {
     execFileSync(TMUX, ['rename-session', '-t', name, fullNewName], { encoding: 'utf-8', timeout: 5000 });
-    invalidatePreview(name);
     attention.rename(name, fullNewName);
+    usageLimits.rename(name, fullNewName);
     aliasOnRename(name, fullNewName);
     // known-sessions mitziehen, damit Restore nach Rename den neuen Namen findet.
     try { await knownSessions.rename(name, fullNewName); } catch (e) { console.error('[known-sessions] rename failed:', e); }
@@ -1084,7 +1078,6 @@ app.post('/api/sessions/:name/adopt', async (req, res) => {
   }
   try {
     execFileSync(TMUX, ['rename-session', '-t', name, fullNewName], { encoding: 'utf-8', timeout: 5000 });
-    invalidatePreview(name);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -1381,6 +1374,35 @@ const HOOK_EVENTS = new Set([
 // und fallen bei Fehlern auf ein leeres Objekt zurück. Payload wird eh
 // nicht ausgewertet, nur durchgereicht.
 const hookBody = express.raw({ type: '*/*', limit: '1mb' });
+
+// StatusLine-Hook: empfängt Rate-Limits, Kosten und Context-Window-Daten
+// von Claude Code. Muss VOR dem generischen :event-Handler stehen, damit
+// Express nicht `:event = "statusline"` matcht.
+app.post('/api/hooks/statusline', hookBody, (req, res) => {
+  const envName = req.get('X-CC-Hub-Session');
+  if (!envName) return res.status(400).json({ error: 'Missing X-CC-Hub-Session' });
+  let data = {};
+  if (Buffer.isBuffer(req.body) && req.body.length > 0) {
+    try { data = JSON.parse(req.body.toString('utf8')); } catch { /* tolerant */ }
+  }
+  const sessionName = resolveHookSession(envName);
+  usageLimits.recordStatusline(sessionName, {
+    pct5h: data.rate_limits?.five_hour?.used_percentage ?? null,
+    pct7d: data.rate_limits?.seven_day?.used_percentage ?? null,
+    resets5h: data.rate_limits?.five_hour?.resets_at ?? null,
+    resets7d: data.rate_limits?.seven_day?.resets_at ?? null,
+    costUsd: data.cost?.total_cost_usd ?? null,
+    durationMs: data.cost?.total_duration_ms ?? null,
+    apiDurationMs: data.cost?.total_api_duration_ms ?? null,
+    linesAdded: data.cost?.total_lines_added ?? null,
+    linesRemoved: data.cost?.total_lines_removed ?? null,
+    model: data.model?.display_name ?? null,
+    contextPct: data.context_window?.used_percentage ?? null,
+    contextSize: data.context_window?.context_window_size ?? null,
+  });
+  res.json({ ok: true, name: sessionName });
+});
+
 app.post('/api/hooks/:event', hookBody, (req, res) => {
   const { event } = req.params;
   const envName = req.get('X-CC-Hub-Session');

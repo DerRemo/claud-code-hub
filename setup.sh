@@ -16,7 +16,7 @@ echo -e "${DIM}  ─────────────────────
 echo ""
 
 # 1. Check prerequisites
-echo -e "${BOLD}[1/6]${RESET} Prüfe Voraussetzungen..."
+echo -e "${BOLD}[1/7]${RESET} Prüfe Voraussetzungen..."
 
 if ! command -v node &> /dev/null; then
   echo "  ✕ Node.js nicht gefunden. Installiere mit: brew install node"
@@ -32,12 +32,12 @@ echo "  ✓ tmux $(tmux -V)"
 
 # 2. Install dependencies
 echo ""
-echo -e "${BOLD}[2/6]${RESET} Installiere Abhängigkeiten..."
+echo -e "${BOLD}[2/7]${RESET} Installiere Abhängigkeiten..."
 npm install
 
 # 3. Configure .env
 echo ""
-echo -e "${BOLD}[3/6]${RESET} Konfiguration..."
+echo -e "${BOLD}[3/7]${RESET} Konfiguration..."
 
 if [ ! -f .env ]; then
   TOKEN=$(openssl rand -hex 32)
@@ -55,7 +55,7 @@ fi
 
 # 4. Create LaunchAgent for auto-start
 echo ""
-echo -e "${BOLD}[4/6]${RESET} LaunchAgent einrichten..."
+echo -e "${BOLD}[4/7]${RESET} LaunchAgent einrichten..."
 
 PLIST_DIR="$HOME/Library/LaunchAgents"
 LAUNCHAGENT_ID="${LAUNCHAGENT_ID:-com.claude-code-hub}"
@@ -118,7 +118,7 @@ echo "  ✓ LaunchAgent erstellt: $PLIST_FILE"
 
 # 5. Claude-Code Hook-Installation
 echo ""
-echo -e "${BOLD}[5/6]${RESET} Claude-Code Hooks installieren..."
+echo -e "${BOLD}[5/7]${RESET} Claude-Code Hooks installieren..."
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
 if ! command -v jq &> /dev/null; then
@@ -162,9 +162,65 @@ else
   echo -e "  ${DIM}  (${#HOOK_EVENTS[@]} Events: ${HOOK_EVENTS[*]})${RESET}"
 fi
 
-# 6. Load and start
+# 6. StatusLine-Script — Hub-Reporting
 echo ""
-echo -e "${BOLD}[6/6]${RESET} Starte Claude Code Hub..."
+echo -e "${BOLD}[6/7]${RESET} StatusLine-Script einrichten..."
+
+SL_SCRIPT="$HOME/.claude/statusline-command.sh"
+SL_SENTINEL_START="#CCH-SL-START#"
+SL_SENTINEL_END="#CCH-SL-END#"
+
+SL_BLOCK='
+# ── Claude Code Hub StatusLine Reporting ── #CCH-SL-START#
+# Sends rate-limit + cost data to the Hub. Throttled: only on value change or every 60s.
+if [ -n "$CC_HUB_URL" ] && [ -n "$CC_HUB_TOKEN" ] && [ -n "$CC_HUB_SESSION" ]; then
+  _sl_session_id=$(echo "$input" | jq -r '"'"'.session_id // empty'"'"')
+  _sl_state_file="/tmp/cc-hub-sl-${_sl_session_id:-unknown}.state"
+  _sl_cost=$(echo "$input" | jq -r '"'"'.cost.total_cost_usd // empty'"'"')
+  _sl_current="${five_hour}:${seven_day}:${_sl_cost}"
+  _sl_last=""
+  _sl_last_ts=0
+  if [ -f "$_sl_state_file" ]; then
+    _sl_last=$(head -1 "$_sl_state_file" 2>/dev/null | cut -d'"'"'|'"'"' -f1)
+    _sl_last_ts=$(head -1 "$_sl_state_file" 2>/dev/null | cut -d'"'"'|'"'"' -f2)
+  fi
+  _sl_now=$(date +%s)
+  _sl_elapsed=$(( _sl_now - ${_sl_last_ts:-0} ))
+
+  if [ "$_sl_current" != "$_sl_last" ] || [ "$_sl_elapsed" -ge 60 ]; then
+    _sl_payload=$(echo "$input" | jq -c '"'"'{rate_limits, cost, context_window, model}'"'"')
+    curl -fsS -m 2 -X POST "$CC_HUB_URL/api/hooks/statusline" \
+      -H "Authorization: Bearer $CC_HUB_TOKEN" \
+      -H "X-CC-Hub-Session: $CC_HUB_SESSION" \
+      -H "Content-Type: application/json" \
+      -d "$_sl_payload" >/dev/null 2>&1 &
+    printf '"'"'%s|%s\n'"'"' "$_sl_current" "$_sl_now" > "$_sl_state_file"
+  fi
+fi
+# ── End Claude Code Hub StatusLine Reporting ── #CCH-SL-END#'
+
+if [ -f "$SL_SCRIPT" ]; then
+  if grep -q "$SL_SENTINEL_START" "$SL_SCRIPT"; then
+    # Replace existing block between sentinels
+    TMP_SL=$(mktemp)
+    sed "/$SL_SENTINEL_START/,/$SL_SENTINEL_END/d" "$SL_SCRIPT" > "$TMP_SL"
+    echo "$SL_BLOCK" >> "$TMP_SL"
+    mv "$TMP_SL" "$SL_SCRIPT"
+    chmod +x "$SL_SCRIPT"
+    echo "  ✓ StatusLine-Reporting-Block aktualisiert in $SL_SCRIPT"
+  else
+    # Append block
+    echo "$SL_BLOCK" >> "$SL_SCRIPT"
+    echo "  ✓ StatusLine-Reporting-Block angehängt an $SL_SCRIPT"
+  fi
+else
+  echo -e "  ${DIM}⚠ $SL_SCRIPT nicht gefunden — überspringe.${RESET}"
+  echo -e "  ${DIM}  StatusLine-Reporting erfordert ein konfiguriertes statusline-command.sh.${RESET}"
+fi
+
+# 7. Load and start
+echo ""
+echo -e "${BOLD}[7/7]${RESET} Starte Claude Code Hub..."
 
 # Vorherige Version (auch unter altem com.derremo-Namen) entladen
 launchctl bootout gui/$(id -u) "$PLIST_FILE" 2>/dev/null || true

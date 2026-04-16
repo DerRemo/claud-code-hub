@@ -280,6 +280,45 @@ tail -f logs/stderr.log
 
 Setup auf frischem Mac: `./setup.sh` (installiert tmux/deps, generiert Token, richtet LaunchAgent ein).
 
+## Usage Dashboard (v0.7.0)
+
+### Datenquellen
+
+Zwei Pipelines speisen das Dashboard:
+
+1. **StatusLine-JSON** — Claude Code sendet bei jedem Status-Line-Render ein JSON-Objekt an `~/.claude/statusline-command.sh`. Das Script rendert die Zeile und sendet per curl ein Subset (rate_limits, cost, context_window, model) an `POST /api/hooks/statusline` (throttled: nur bei Wert-Änderung oder alle 60s). Daraus kommen: Live-Limit-Prozente mit Reset-Countdown, Session-Kosten in USD, Lines Added/Removed, API-Dauer.
+
+2. **JSONL-Analyse** — `lib/usage.js` liest `~/.claude/projects/<mangled-cwd>/*.jsonl` und aggregiert: Token-Verbrauch pro Projekt, Tageszeit-Heatmap (7×24), Tool-Nutzung Top-10, Arbeitsweise (autonome Tool-Ketten vs. direkte Antworten), Cache-Hit-Rate, API-Errors, Sessions pro Tag, geschätzte Kosten.
+
+### lib/usage-limits.js
+
+In-Memory-State pro Session (`Map<sessionName, {...}>`), gespeist von `POST /api/hooks/statusline`. Historisches Limit-Log in `~/.claude-code-hub/usage-limits.jsonl` (append-only, 5MB Rotation, 5min Write-Throttle). Frische-Window: 120s — nach Ablauf gibt `getSessionStatusline()` null zurück.
+
+Funktionen:
+- `recordStatusline(name, data)` — In-Memory-State + Log
+- `getSessionStatusline(name)` — aktueller State oder null
+- `getAllSessionCosts()` — aggregiert über alle frischen Sessions
+- `getLimitHistory({days})` — JSONL-Datenpunkte + Peak-Counts
+- `rename(old, new)` / `forget(name)` — Lifecycle parallel zu attention.js
+
+### Neue Endpoints
+
+| Method | Route | Beschreibung |
+|--------|-------|-------------|
+| POST | `/api/hooks/statusline` | StatusLine-Daten empfangen. Auth via Bearer, Session via `X-CC-Hub-Session`. Tolerantes JSON-Parsing. |
+| GET | `/api/usage/limits?days=7` | Limit-History + Peaks + aktuelle Werte. 30s-Cache. |
+| GET | `/api/usage/costs` | Aggregierte Kosten aus allen aktiven Sessions. 10s-Cache. |
+
+`GET /api/usage/history?days=30` liefert jetzt das erweiterte Payload aus `getDailyUsageV2` (zusätzlich: byProject, heatmap, cacheRate, workStyle, toolUsage, dailySessions, errors).
+
+### Wegfall: tmux capture-pane für Usage
+
+`parseUsagePct5h`, `getSessionPreview` und der Preview-Cache sind entfernt. Session-Enrichment liest Limit-Daten aus dem StatusLine In-Memory-State. Session-Response enthält `limits` (pct5h, pct7d, resets5h, resets7d) und `cost` (totalUsd, durationMs, linesAdded, linesRemoved) statt `usagePct5h`.
+
+### StatusLine-Script
+
+`setup.sh` Schritt `[6/7]` installiert idempotent einen Reporting-Block in `~/.claude/statusline-command.sh` zwischen `#CCH-SL-START#` / `#CCH-SL-END#` Sentinel-Kommentaren. Re-Runs ersetzen nur den Hub-Block, User-Rendering bleibt erhalten.
+
 ## Bekannte Einschränkungen
 
 - tmux-Socket wird beim ersten `tmux new-session` automatisch erstellt
