@@ -3447,9 +3447,9 @@
   <div class="terminal-view" id="terminal-view" data-view="terminal">
     <div class="terminal-toolbar">
       <div class="terminal-toolbar-left">
-        <button class="btn btn-ghost btn-sm" id="disconnect-btn" type="button" aria-label="Zurück zum Dashboard" title="Zurück">
+        <button class="btn btn-ghost btn-sm" id="disconnect-btn" type="button" aria-label="Back to dashboard" title="Back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          <span class="btn-label">Zurück</span>
+          <span class="btn-label">Back</span>
         </button>
         <span class="terminal-session-name" id="terminal-session-name"></span>
         <span class="conn-status" id="conn-status" data-state="connecting">
@@ -3457,17 +3457,17 @@
         </span>
       </div>
       <div class="terminal-toolbar-right">
-        <button class="btn btn-ghost btn-sm" id="btn-toggle-files" type="button" style="display:none" aria-label="Dateien" title="Dateien anzeigen">
+        <button class="btn btn-ghost btn-sm" id="btn-toggle-files" type="button" style="display:none" aria-label="Show files" title="Show files">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span class="btn-label">Dateien</span>
+          <span class="btn-label">Files</span>
         </button>
-        <button class="btn btn-ghost btn-sm" id="idea-capture-btn" type="button" hidden aria-label="Idee notieren" title="Idee ins Projekt-Backlog notieren">
+        <button class="btn btn-ghost btn-sm" id="idea-capture-btn" type="button" hidden aria-label="Capture idea" title="Capture idea to project backlog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 4 12.7V17H8v-2.3A7 7 0 0 1 12 2z"/></svg>
-          <span class="btn-label">Idee notieren</span>
+          <span class="btn-label">Capture idea</span>
         </button>
-        <button class="btn btn-danger btn-sm" id="kill-current-btn" type="button" aria-label="Session beenden" title="Session beenden">
+        <button class="btn btn-danger btn-sm" id="kill-current-btn" type="button" aria-label="Kill session" title="Kill session">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          <span class="btn-label">Beenden</span>
+          <span class="btn-label">Kill</span>
         </button>
       </div>
     </div>
@@ -3475,9 +3475,9 @@
       <aside class="files-sidebar" id="files-sidebar">
         <div class="files-toolbar">
           <span class="breadcrumb" id="files-breadcrumb">/</span>
-          <button id="files-mkdir" title="Neuer Ordner">+ Ordner</button>
-          <button id="files-upload-picker" title="Datei hochladen">+ Datei</button>
-          <button id="files-refresh" title="Neu laden">⟳</button>
+          <button id="files-mkdir" title="New Folder">+ Folder</button>
+          <button id="files-upload-picker" title="Upload File">+ File</button>
+          <button id="files-refresh" title="Refresh">⟳</button>
           <button id="files-close" title="Schließen">×</button>
         </div>
         <div class="files-tree" id="files-tree"></div>
@@ -7531,7 +7531,7 @@
             if (window.FileActions && window.currentProjectId) {
               window.FileActions.mkdirPrompt(window.currentProjectId, '');
             } else {
-              showToast('Ordner erstellen nicht verfügbar', 'error');
+              showToast('Cannot create folder', 'error');
             }
           });
 
@@ -7908,14 +7908,14 @@
         e.preventDefault();
         const relPath = row.dataset.path;
         showMenu(e.clientX, e.clientY, [
-          { label: 'Öffnen', action: () => row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })) },
-          { label: 'Umbenennen', action: () => startRename(projectId, row) },
-          { label: 'Kopieren nach…', action: () => promptOp(projectId, relPath, 'copy') },
-          { label: 'Verschieben nach…', action: () => promptOp(projectId, relPath, 'move') },
+          { label: 'Open', action: () => row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })) },
+          { label: 'Rename', action: () => startRename(projectId, row) },
+          { label: 'Copy to…', action: () => promptOp(projectId, relPath, 'copy') },
+          { label: 'Move to…', action: () => promptOp(projectId, relPath, 'move') },
           '---',
-          { label: 'In Papierkorb', action: () => confirmDelete(projectId, row, relPath) },
+          { label: 'Move to Trash', action: () => confirmDelete(projectId, row, relPath) },
           '---',
-          { label: 'Pfad kopieren', action: () => navigator.clipboard?.writeText(relPath).catch(() => {}) },
+          { label: 'Copy Path', action: () => navigator.clipboard?.writeText(relPath).catch(() => {}) },
         ]);
       }
 
@@ -7956,7 +7956,7 @@
             span.textContent = newName;
             input.replaceWith(span);
           } else {
-            notify('Umbenennen fehlgeschlagen', 'error');
+            notify('Rename failed', 'error');
             settled = false;
             cancel();
           }
@@ -7994,7 +7994,7 @@
           if (res.ok) {
             row.remove();
           } else {
-            notify('Löschen fehlgeschlagen', 'error');
+            notify('Delete failed', 'error');
             row.classList.remove('pending-delete');
             const lbl = row.querySelector('span:last-child');
             if (lbl) lbl.textContent = oldLabel;
@@ -8004,8 +8004,8 @@
       }
 
       async function promptOp(projectId, relPath, op) {
-        const label = op === 'copy' ? 'Kopieren nach' : 'Verschieben nach';
-        const to = window.prompt(`${label} (relativer Zielpfad):`, relPath);
+        const label = op === 'copy' ? 'Copy to' : 'Move to';
+        const to = window.prompt(`${label} (relative target path):`, relPath);
         if (!to || to === relPath) return;
         const res = await authedFetch(`/api/projects/${projectId}/files`, {
           method: 'PATCH',
@@ -8020,14 +8020,14 @@
       }
 
       async function mkdirPrompt(projectId, parentRel = '') {
-        const name = window.prompt('Neuer Ordner:');
+        const name = window.prompt('New Folder:');
         if (!name) return;
         const res = await authedFetch(`/api/projects/${projectId}/files/mkdir`, {
           method: 'POST',
           body: { path: parentRel, name },
         });
         if (!res.ok) {
-          notify('Anlegen fehlgeschlagen', 'error');
+          notify('Create failed', 'error');
           return;
         }
         const refreshBtn = document.getElementById('files-refresh');
@@ -8165,10 +8165,10 @@
       }
 
       function showConflictUI(toast, job) {
-        toast.querySelector('.status').textContent = 'existiert';
+        toast.querySelector('.status').textContent = 'exists';
         const row = document.createElement('div');
         row.className = 'conflict';
-        row.innerHTML = '<button data-a="rename">Umbenennen</button><button data-a="overwrite">Überschreiben</button><button data-a="abort">Abbrechen</button>';
+        row.innerHTML = '<button data-a="rename">Rename</button><button data-a="overwrite">Overwrite</button><button data-a="abort">Cancel</button>';
         toast.appendChild(row);
         row.addEventListener('click', (e) => {
           const a = e.target.dataset.a;
@@ -8219,7 +8219,7 @@
           overlay.id = 'terminal-drop-overlay';
           const label = document.createElement('div');
           label.id = 'terminal-drop-label';
-          label.textContent = 'In Session-cwd hochladen';
+          label.textContent = 'Upload to session directory';
           overlay.appendChild(label);
           container.appendChild(overlay);
         }
@@ -8262,7 +8262,7 @@
         if (overlay) overlay.classList.remove('active');
         const name = window.currentSessionName || null;
         if (!name) {
-          if (typeof showToast === 'function') showToast('Keine aktive Session', 'error');
+          if (typeof showToast === 'function') showToast('No active session', 'error');
           return;
         }
         for (const f of e.dataTransfer.files) {
@@ -8280,7 +8280,7 @@
         <span class="name" id="preview-name"></span>
         <span class="size" id="preview-size"></span>
         <span class="spacer"></span>
-        <button id="preview-copy-path" title="Pfad kopieren">Pfad</button>
+        <button id="preview-copy-path" title="Copy Path">Path</button>
         <button id="preview-close" title="Schließen">×</button>
       </div>
       <div class="preview-body" id="preview-body"></div>
