@@ -3277,7 +3277,7 @@
     <aside class="sidebar" id="sidebar" aria-label="Navigation">
       <div class="sidebar__label">Sessions</div>
       <div id="sidebar-sessions">
-        <div class="sidebar__empty">Lade…</div>
+        <div class="sidebar__empty">Loading…</div>
       </div>
 
       <div class="sidebar__divider"></div>
@@ -3370,14 +3370,14 @@
             <span>no ROADMAP.md files discovered yet.</span>
           </div>
           <div class="cmd-block">
-            <p>Auto-Discovery wird Phase 1 einhängen:<br>
+            <p>Auto-Discovery will hook in at Phase 1:<br>
                <span class="cmd-path">~/Projects/*/ROADMAP.md</span></p>
-            <p>Features geplant:</p>
+            <p>Planned features:</p>
             <ul class="cmd-bullets">
-              <li>Backlog + Changelog pro Projekt</li>
-              <li>Session ↔ Projekt-Verknüpfung</li>
-              <li>File-Watcher für Live-Sync</li>
-              <li>„Version abschließen" generiert Release-Notes-Markdown</li>
+              <li>Backlog + Changelog per project</li>
+              <li>Session ↔ Project linking</li>
+              <li>File-Watcher for live-sync</li>
+              <li>"Finalize version" generates release-notes markdown</li>
             </ul>
           </div>
           <hr class="cmd-rule">
@@ -3398,18 +3398,18 @@
       <div class="detail-toolbar-left">
         <button class="btn btn-ghost btn-sm" id="project-back-btn" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Zurück
+          Back
         </button>
         <span class="detail-title" id="project-detail-title">—</span>
       </div>
       <div class="detail-toolbar-right">
-        <button class="btn btn-ghost btn-sm" id="project-release-btn" type="button" hidden title="Dev-Items → Released verschieben, Versions bumpen, Changelog schreiben">
+        <button class="btn btn-ghost btn-sm" id="project-release-btn" type="button" hidden title="Move dev items to Released, bump versions, write changelog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Version abschließen
+          Finalize version
         </button>
         <button class="btn btn-primary btn-sm" id="project-new-session-btn" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Session hier starten
+          Start session here
         </button>
       </div>
     </div>
@@ -3429,7 +3429,7 @@
           <ul class="cmd-bullets">
             <li>Released / Dev / Backlog / Changelog sub-tabs</li>
             <li>clickable checkboxes that write back to <span class="cmd-path">ROADMAP.md</span> atomically</li>
-            <li>„Version abschließen" — moves Dev items → Changelog, generates release-notes markdown</li>
+            <li>"Finalize version" — moves Dev items → Changelog, generates release-notes markdown</li>
           </ul>
         </div>
         <hr class="cmd-rule">
@@ -3526,8 +3526,8 @@
 
   <div class="modal-overlay" id="release-modal" role="dialog" aria-modal="true" aria-labelledby="release-modal-title">
     <div class="modal">
-      <h2 id="release-modal-title">Version abschließen</h2>
-      <p>Alle Items aus <strong>In Entwicklung</strong> werden nach <strong>Released</strong> verschoben, beide Versions-Header gebumpt, und ein neuer Changelog-Eintrag oben eingefügt. Das ist eine destruktive Aktion — mach vorher einen Git-Commit der ROADMAP.md falls du sie versionierst.</p>
+      <h2 id="release-modal-title">Finalize version</h2>
+      <p>All items from <strong>In Entwicklung</strong> will be moved to <strong>Released</strong>, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.</p>
       <div class="form-group">
         <label class="form-label" for="release-version-input">Release Version (sets <code>## Released: vX</code>)</label>
         <input class="form-input" id="release-version-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.3.0">
@@ -3966,7 +3966,7 @@
           <span>No ROADMAP.md files found.</span>
         </div>
         <div class="cmd-block">
-          <p>Lege eine <span class="cmd-path">ROADMAP.md</span> in einem Projekt unter <span class="cmd-path">~/Projects/*</span> an — beim nächsten Server-Start wird sie automatisch registriert.</p>
+          <p>Create a <span class="cmd-path">ROADMAP.md</span> in a project under <span class="cmd-path">~/Projects/*</span> — it will be registered on the next server restart.</p>
         </div>
         <hr class="cmd-rule">
         <div class="cmd-status">
@@ -3995,7 +3995,7 @@
         const matches = data.matches || [];
         const block = document.createElement('div');
         block.className = 'roadmap-search-results';
-        const header = `<h3>Roadmap-Treffer für „${escapeHtml(q)}" (${matches.length}${data.truncated ? '+' : ''})</h3>`;
+        const header = `<h3>Roadmap matches for "${escapeHtml(q)}" (${matches.length}${data.truncated ? '+' : ''})</h3>`;
         if (matches.length === 0) {
           block.innerHTML = header + '<div class="roadmap-search-empty">No matching items found.</div>';
         } else {
@@ -4028,7 +4028,7 @@
 
     async function renderProjects() {
       const view = document.getElementById('projects-view');
-      view.innerHTML = '<div class="usage-empty">Lade Projekte…</div>';
+      view.innerHTML = '<div class="usage-empty">Loading projects…</div>';
       try {
         const res = await fetch('/api/projects', { headers: apiHeaders() });
         if (res.status === 401) {
@@ -4058,7 +4058,7 @@
             <button class="project-card" type="button" data-project-id="${escapeHtml(p.id)}">
               <div class="project-card-head">
                 <span class="project-card-name">${escapeHtml(p.displayName)}</span>
-                ${p.missing ? '<span class="project-missing">ROADMAP.md fehlt</span>' : ''}
+                ${p.missing ? '<span class="project-missing">ROADMAP.md missing</span>' : ''}
               </div>
               <div class="project-card-versions">
                 <span>released&nbsp;<strong>${relLabel}</strong></span>
@@ -4080,7 +4080,7 @@
           });
         });
       } catch (e) {
-        view.innerHTML = `<div class="usage-empty">Fehler: ${escapeHtml(e.message)}</div>`;
+        view.innerHTML = `<div class="usage-empty">Error: ${escapeHtml(e.message)}</div>`;
       }
     }
 
@@ -4346,7 +4346,7 @@
         card.classList.add('attention-flash');
       }
       const displayName = name.replace(/^cc-/, '');
-      showToast(`${displayName} hat Output`, 'info');
+      showToast(`${displayName} has output`, 'info');
     }
 
     // ── Web Push ──────────────────────────────────────────────────
@@ -4372,7 +4372,7 @@
       if (!btn) return;
       if (Notification.permission === 'denied') {
         btn.setAttribute('data-push', 'denied');
-        btn.title = 'Push blockiert — Browser-Einstellungen ändern';
+        btn.title = 'Push blocked — change browser settings';
         return;
       }
       const on = overrideState !== undefined ? overrideState : pushEnabled();
@@ -4734,7 +4734,7 @@
       }
 
       title.textContent = '…';
-      body.innerHTML = '<div class="usage-empty">Lade Projekt…</div>';
+      body.innerHTML = '<div class="usage-empty">Loading project…</div>';
       // Buttons default hidden — werden nach erfolgreichem Load wieder aktiviert.
       const startBtnEl = document.getElementById('project-new-session-btn');
       if (startBtnEl) startBtnEl.hidden = true;
@@ -4764,7 +4764,7 @@
 
         if (p.missing) {
           body.innerHTML = `
-            <div class="cmd-output-block" role="region" aria-label="Projekt — ROADMAP.md fehlt">
+            <div class="cmd-output-block" role="region" aria-label="Project — ROADMAP.md missing">
               <div class="cmd-line cmd-line--prompt">
                 <span class="cmd-prompt">$</span>
                 <span class="cmd-command">hub project open ${escapeHtml(p.displayName)}</span>
@@ -4772,11 +4772,11 @@
               <hr class="cmd-rule">
               <div class="cmd-line cmd-line--lead">
                 <span class="cmd-marker">›</span>
-                <span>ROADMAP.md nicht lesbar.</span>
+                <span>ROADMAP.md not readable.</span>
               </div>
               <div class="cmd-block">
-                <p>Pfad: <span class="cmd-path">${escapeHtml(p.path)}</span></p>
-                <p>Lege eine <span class="cmd-path">ROADMAP.md</span> in diesem Verzeichnis an und starte den Server neu.</p>
+                <p>Path: <span class="cmd-path">${escapeHtml(p.path)}</span></p>
+                <p>Create a <span class="cmd-path">ROADMAP.md</span> in this directory and restart the server.</p>
               </div>
               <hr class="cmd-rule">
               <div class="cmd-status">
@@ -4792,7 +4792,7 @@
             <button class="roadmap-checkbox" type="button" aria-label="${it.done ? 'Als offen markieren' : 'Als erledigt markieren'}">${it.done ? '[x]' : '[ ]'}</button>
             <span class="roadmap-text">${escapeHtml(it.text)}</span>
             ${renderMetaPills(it.meta)}
-            <button class="roadmap-item-delete" type="button" aria-label="Item löschen" title="Löschen">×</button>
+            <button class="roadmap-item-delete" type="button" aria-label="Delete item" title="Delete">×</button>
           </li>`;
 
         const section = (label, version, items, sectionKey) => `
@@ -4811,7 +4811,7 @@
         const renderSessionItem = (s) => {
           const displayName = s.name.replace(/^cc-/, '');
           const relPath = s.path === p.path ? '.' : s.path.slice(p.path.length + 1);
-          const statusLabel = s.status === 'dormant' ? 'ruhend' : 'läuft';
+          const statusLabel = s.status === 'dormant' ? 'dormant' : 'running';
           return `
             <li class="project-session-item" data-status="${s.status || 'running'}" data-name="${escapeHtml(s.name)}">
               <span class="project-session-dot" title="${statusLabel}"></span>
@@ -4825,8 +4825,8 @@
             ${linkedSessions.length
               ? `<ul class="project-sessions-list">${linkedSessions.map(renderSessionItem).join('')}</ul>`
               : sessions === null
-                ? '<div class="project-sessions-empty">Lade Sessions…</div>'
-                : '<div class="project-sessions-empty">Keine Session läuft in diesem Verzeichnis.</div>'}
+                ? '<div class="project-sessions-empty">Loading sessions…</div>'
+                : '<div class="project-sessions-empty">No session running in this directory.</div>'}
           </div>`;
 
         // Toolbar-Button für "Session hier starten" aktivieren + Pfad
@@ -4925,7 +4925,7 @@
               renderProjectDetail(p.id);
             } catch (err) {
               if (err.status === 409) {
-                showProjectToast('Konflikt — lade neu…');
+                showProjectToast('Conflict — reloading…');
                 renderProjectDetail(p.id);
               } else {
                 // Revert optimistic flip in allen Fehler-Pfaden
@@ -4935,7 +4935,7 @@
                 btn.textContent = wasDone ? '[x]' : '[ ]';
                 btn.disabled = false;
                 if (err.status !== 401) {
-                  showProjectToast('Fehler: ' + err.message);
+                  showProjectToast('Error: ' + err.message);
                 }
               }
             }
@@ -4954,7 +4954,7 @@
           const resetPending = () => {
             btn.classList.remove('confirm-pending');
             btn.textContent = '×';
-            btn.setAttribute('aria-label', 'Item löschen');
+            btn.setAttribute('aria-label', 'Delete item');
             if (revertTimer) { clearTimeout(revertTimer); revertTimer = null; }
           };
 
@@ -4970,7 +4970,7 @@
             if (!btn.classList.contains('confirm-pending')) {
               btn.classList.add('confirm-pending');
               btn.textContent = '✓?';
-              btn.setAttribute('aria-label', 'Löschen bestätigen');
+              btn.setAttribute('aria-label', 'Confirm delete');
               revertTimer = setTimeout(resetPending, CONFIRM_REVERT_MS);
               return;
             }
@@ -4987,10 +4987,10 @@
               btn.disabled = false;
               resetPending();
               if (err.status === 409) {
-                showProjectToast('Konflikt — lade neu…');
+                showProjectToast('Conflict — reloading…');
                 renderProjectDetail(p.id);
               } else if (err.status !== 401) {
-                showProjectToast('Fehler: ' + err.message);
+                showProjectToast('Error: ' + err.message);
               }
             }
           });
@@ -5040,16 +5040,16 @@
             input.disabled = true;
             try {
               await patchItem(p.id, { action: 'add', section: sectionKey, text });
-              showProjectToast('Item hinzugefügt', 'success');
+              showProjectToast('Item added', 'success');
               renderProjectDetail(p.id);
             } catch (err) {
               committing = false;
               input.disabled = false;
               if (err.status === 409) {
-                showProjectToast('Konflikt — lade neu…');
+                showProjectToast('Conflict — reloading…');
                 renderProjectDetail(p.id);
               } else if (err.status !== 401) {
-                showProjectToast('Fehler: ' + err.message);
+                showProjectToast('Error: ' + err.message);
                 input.focus();
               }
             }
@@ -5069,7 +5069,7 @@
           });
         }
       } catch (e) {
-        body.innerHTML = `<div class="usage-empty">Fehler: ${escapeHtml(e.message)}</div>`;
+        body.innerHTML = `<div class="usage-empty">Error: ${escapeHtml(e.message)}</div>`;
       }
     }
 
@@ -5077,7 +5077,7 @@
     let _usageCountdownInterval = null;
     async function renderUsage() {
       const view = document.getElementById('usage-view');
-      view.innerHTML = '<div class="usage-empty">Lade Usage-Daten…</div>';
+      view.innerHTML = '<div class="usage-empty">Loading usage data…</div>';
       if (_usageCountdownInterval) { clearInterval(_usageCountdownInterval); _usageCountdownInterval = null; }
       try {
         const hdrs = apiHeaders();
@@ -5119,7 +5119,7 @@
           const urgent7 = (cur.pct7d ?? 0) > 90 ? ' usage-limit-urgent' : '';
           limitHtml = `
             <div class="usage-limit-card">
-              <div class="ulc-title">Limit-Status</div>
+              <div class="ulc-title">Limit Status</div>
               <div class="usage-limit-row">
                 <span class="usage-limit-label">5h</span>
                 <div class="usage-limit-bar"><div class="usage-limit-fill ${c5}" style="width:${Math.min(cur.pct5h ?? 0, 100)}%"></div></div>
@@ -5135,7 +5135,7 @@
               ${(lim.peaks5h || lim.peaks7d) ? `<div class="usage-limit-peaks">Letzte 7 Tage: ${lim.peaks5h ?? 0}x &gt;90% (5h) · ${lim.peaks7d ?? 0}x &gt;90% (7d)</div>` : ''}
             </div>`;
         } else {
-          limitHtml = `<div class="usage-limit-card"><div class="ulc-title">Limit-Status</div><div style="color:var(--text-muted);font-size:13px">Keine Limit-Daten vorhanden</div></div>`;
+          limitHtml = `<div class="usage-limit-card"><div class="ulc-title">Limit Status</div><div style="color:var(--text-muted);font-size:13px">No limit data available</div></div>`;
         }
 
         // ── Heatmap ──
@@ -5159,7 +5159,7 @@
               cells += `<div class="hm-cell" style="${bg}" title="${dayLabels[d]} ${h}:00 — ${formatTokensCompact(tok)}"></div>`;
             }
           }
-          heatmapHtml = `<div class="usage-section"><div class="us-title">Aktivitaet (Heatmap)</div><div class="usage-heatmap-wrap"><div class="usage-heatmap">${cells}</div></div></div>`;
+          heatmapHtml = `<div class="usage-section"><div class="us-title">Activity (Heatmap)</div><div class="usage-heatmap-wrap"><div class="usage-heatmap">${cells}</div></div></div>`;
         }
 
         // ── Top Projects ──
@@ -5172,7 +5172,7 @@
               <div class="usage-bar-track"><div class="usage-bar-fill" style="width:${Math.round((p.tokens / maxP) * 100)}%"></div></div>
               <span class="usage-bar-count">${formatTokensCompact(p.tokens)}</span>
             </div>`).join('');
-          projectsHtml = `<div class="usage-section"><div class="us-title">Top Projekte</div><div class="usage-bar-list">${bars}</div></div>`;
+          projectsHtml = `<div class="usage-section"><div class="us-title">Top Projects</div><div class="usage-bar-list">${bars}</div></div>`;
         }
 
         // ── 30-Day Table ──
@@ -5204,7 +5204,7 @@
           const ws = hist.workStyle;
           const toolPct = Math.round((ws.toolUse / ws.total) * 100);
           const directPct = 100 - toolPct;
-          workHtml = `<div class="usage-section"><div class="us-title">Arbeitsweise</div><div class="usage-workstyle-bar"><div class="ws-tool" style="width:${toolPct}%"></div><div class="ws-direct" style="width:${directPct}%"></div></div><div class="usage-workstyle-labels"><span>Tool-Ketten <strong>${toolPct}%</strong> (${ws.toolUse})</span><span>Direkte Antworten <strong>${directPct}%</strong> (${ws.endTurn})</span></div></div>`;
+          workHtml = `<div class="usage-section"><div class="us-title">Work Style</div><div class="usage-workstyle-bar"><div class="ws-tool" style="width:${toolPct}%"></div><div class="ws-direct" style="width:${directPct}%"></div></div><div class="usage-workstyle-labels"><span>Tool Chains <strong>${toolPct}%</strong> (${ws.toolUse})</span><span>Direct Answers <strong>${directPct}%</strong> (${ws.endTurn})</span></div></div>`;
         }
 
         // ── Produktivitaet ──
@@ -5217,10 +5217,10 @@
         // ── Assemble ──
         view.innerHTML = `
           <div class="usage-summary-grid">
-            <div class="usage-summary-card"><div class="usc-value">${costVal}</div><div class="usc-label">Kosten<br>Monat</div></div>
-            <div class="usage-summary-card"><div class="usc-value">${sessVal}</div><div class="usc-label">Sessions<br>Monat</div></div>
-            <div class="usage-summary-card"><div class="usc-value">${cacheVal}</div><div class="usc-label">Cache-Rate<br>Monat</div></div>
-            <div class="usage-summary-card"><div class="usc-value">${autonomyVal}</div><div class="usc-label">Autonom<br>Tool-Ketten</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${costVal}</div><div class="usc-label">Monthly<br>Cost</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${sessVal}</div><div class="usc-label">Monthly<br>Sessions</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${cacheVal}</div><div class="usc-label">Monthly<br>Cache Rate</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${autonomyVal}</div><div class="usc-label">Autonomous<br>Tool Chains</div></div>
           </div>
           ${limitHtml}
           <div class="usage-two-col">
@@ -5244,7 +5244,7 @@
         }, 60000);
 
       } catch (e) {
-        view.innerHTML = `<div class="usage-empty">Fehler beim Laden: ${escapeHtml(e.message)}</div>`;
+        view.innerHTML = `<div class="usage-empty">Load error: ${escapeHtml(e.message)}</div>`;
       }
     }
 
@@ -5497,8 +5497,8 @@
         if (sessions.length > 0 && q) {
           empty.innerHTML = `
             <div class="empty-state-icon">⌕</div>
-            <h3>Keine Treffer</h3>
-            <p>Kein Session-Name oder Preview matcht "${escapeHtml(q)}".</p>
+            <h3>No matches</h3>
+            <p>No session name or preview matches "${escapeHtml(q)}".</p>
           `;
         } else {
           empty.innerHTML = `
@@ -5507,7 +5507,7 @@
             <p>Start a new Claude Code session to get started.</p>
             <button class="btn btn-primary" data-action="new-session">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
-              Neue Session
+              New Session
             </button>
           `;
         }
@@ -5599,11 +5599,11 @@
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-ghost btn-sm" data-action="connect">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                Verbinden
+                Connect
               </button>
               <button class="btn btn-danger btn-sm" data-action="kill">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                Beenden
+                Kill
               </button>
             </div>
           </div>
@@ -5629,17 +5629,17 @@
             <div class="dormant-stub">
               <div class="path">${escapeHtml(s.path || '')}</div>
               <div>$ ${escapeHtml(s.command || 'claude')}</div>
-              <div>Zuletzt gesehen: ${escapeHtml(lastSeen)}</div>
+              <div>Last seen: ${escapeHtml(lastSeen)}</div>
             </div>
             ${s.git ? `<div class="session-meta" style="padding-top: var(--space-2)">${renderGitBadge(s.git)}</div>` : ''}
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-primary btn-sm" data-action="restore">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Wiederherstellen
+                Restore
               </button>
-              <button class="btn btn-ghost btn-sm" data-action="forget" title="Aus der Liste entfernen">
+              <button class="btn btn-ghost btn-sm" data-action="forget" title="Remove from list">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-                Vergessen
+                Forget
               </button>
             </div>
           </div>
@@ -5672,7 +5672,7 @@
               </button>
               <button class="btn btn-ghost btn-sm" data-action="connect">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                Verbinden
+                Connect
               </button>
             </div>
           </div>
@@ -6362,15 +6362,15 @@
         if (reconnectAttempts < MAX_RECONNECT) {
           reconnectAttempts++;
           setConnStatus('connecting', `Reconnect in 2s (${reconnectAttempts}/${MAX_RECONNECT})`);
-          term.write(`\r\n\x1b[90m── Verbindung verloren, reconnect ${reconnectAttempts}/${MAX_RECONNECT} ──\x1b[0m\r\n`);
+          term.write(`\r\n\x1b[90m── Connection lost, reconnect ${reconnectAttempts}/${MAX_RECONNECT} ──\x1b[0m\r\n`);
           clearTimeout(reconnectTimer);
           reconnectTimer = setTimeout(() => {
             // Session existiert noch? Vorher prüfen.
             openTerminalWebSocket(name, term, fitAddon, container, /*isReconnect=*/true);
           }, 2000);
         } else {
-          setConnStatus('disconnected', 'Getrennt');
-          term.write('\r\n\x1b[90m── Verbindung getrennt, Reconnect-Limit erreicht ──\x1b[0m\r\n');
+          setConnStatus('disconnected', 'Disconnected');
+          term.write('\r\n\x1b[90m── Connection closed, reconnect limit reached ──\x1b[0m\r\n');
         }
       };
 
@@ -6627,7 +6627,7 @@
       body.textContent = '';
 
       const intro = document.createElement('span');
-      intro.textContent = `Beende ${candidates.length} Session${candidates.length === 1 ? '' : 's'} ohne aktuelle Aktivität:`;
+      intro.textContent = `Terminating ${candidates.length} session${candidates.length === 1 ? '' : 's'} without recent activity:`;
       body.appendChild(intro);
 
       const ul = document.createElement('ul');
@@ -7093,7 +7093,7 @@
           throw new Error(err.detail || err.error || `HTTP ${res.status}`);
         }
         closeReleaseModal();
-        showProjectToast(`v${releaseVersion} abgeschlossen`, 'success');
+        showProjectToast(`v${releaseVersion} finalized`, 'success');
         renderProjectDetail(projectId);
       } catch (e) {
         showToast('Release failed: ' + e.message, 'error');
@@ -7441,7 +7441,7 @@
         } catch (e) {
           const err = document.createElement('div');
           err.style.cssText = 'padding:6px 12px;color:var(--red,#f88);font-size:11px;';
-          err.textContent = `Fehler: ${e.message}`;
+          err.textContent = `Error: ${e.message}`;
           wrap.appendChild(err);
         }
       }
@@ -7476,7 +7476,7 @@
 
       async function renderRoot() {
         const tree = document.getElementById('files-tree');
-        tree.innerHTML = '<div style="padding:8px;color:var(--text-muted,#666);font-size:11px;">Lade…</div>';
+        tree.innerHTML = '<div style="padding:8px;color:var(--text-muted,#666);font-size:11px;">Loading…</div>';
         try {
           const list = await fetchList('');
           tree.innerHTML = '';
@@ -7789,11 +7789,11 @@
             headers: { Authorization: `Bearer ${AUTH_TOKEN || ''}` },
           });
           if (res.status === 413) {
-            body.innerHTML = `<div class="preview-oversize">Zu groß für Preview. Im Terminal öffnen.</div>`;
+            body.innerHTML = `<div class="preview-oversize">Too large for preview. Open in terminal.</div>`;
             return;
           }
           if (res.status === 415) {
-            body.innerHTML = `<div class="preview-oversize">Unbekannter Binärtyp.</div>`;
+            body.innerHTML = `<div class="preview-oversize">Unknown binary type.</div>`;
             return;
           }
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -7829,7 +7829,7 @@
             } catch {}
           }
         } catch (e) {
-          body.innerHTML = `<div class="preview-oversize">Fehler: ${(e && e.message) || e}</div>`;
+          body.innerHTML = `<div class="preview-oversize">Error: ${(e && e.message) || e}</div>`;
         }
       }
 
@@ -8087,7 +8087,7 @@
         if (file.size > HARD_CAP) {
           const t = addToast(file.name);
           t.classList.add('error');
-          t.querySelector('.status').textContent = 'zu groß (Max 100 MB)';
+          t.querySelector('.status').textContent = 'too large (max 100 MB)';
           setTimeout(() => t.remove(), 5000);
           return;
         }
@@ -8145,11 +8145,11 @@
               showConflictUI(toast, job);
             } else if (xhr.status === 413) {
               toast.classList.add('error');
-              toast.querySelector('.status').textContent = 'zu groß (Server)';
+              toast.querySelector('.status').textContent = 'too large (server)';
               setTimeout(() => toast.remove(), 5000);
             } else {
               toast.classList.add('error');
-              toast.querySelector('.status').textContent = `Fehler ${xhr.status}`;
+              toast.querySelector('.status').textContent = `Error ${xhr.status}`;
               setTimeout(() => toast.remove(), 5000);
             }
             resolve();
@@ -8191,7 +8191,7 @@
               toast.querySelector('.status').textContent = 'fertig';
               setTimeout(() => toast.remove(), 2000);
             } else {
-              toast.querySelector('.status').textContent = `Fehler ${xhr.status}`;
+              toast.querySelector('.status').textContent = `Error ${xhr.status}`;
               setTimeout(() => toast.remove(), 5000);
             }
           });
