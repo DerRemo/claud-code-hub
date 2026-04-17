@@ -582,8 +582,6 @@
       .header .logo-text { font-size: 15px; }
       .header { gap: var(--space-2); padding-left: max(var(--space-3), env(safe-area-inset-left)); padding-right: max(var(--space-3), env(safe-area-inset-right)); }
       .header-right { gap: var(--space-1); }
-      /* Header-Icon-Buttons auf 44px für Touch-Komfort */
-      .header .theme-toggle { width: 44px; height: 44px; }
     }
 
     /* ── Terminal-Header (neu, in .terminal-view) ───────────────── */
@@ -2543,7 +2541,6 @@
     .session-card:focus-visible,
     .search-input:focus-visible,
     .layout-toggle-btn:focus-visible,
-    .theme-toggle:focus-visible,
     .tree-row:focus-visible {
       outline: 2px solid var(--teal);
       outline-offset: 2px;
@@ -2558,40 +2555,6 @@
       }
       .session-card.card-enter { animation: none !important; }
     }
-
-    /* ── Theme-Toggle-Button im Header ─────────────────────────────── */
-    .theme-toggle {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-    .theme-toggle:hover {
-      background: var(--bg-card-hover);
-      color: var(--teal);
-      border-color: var(--teal-glow-strong);
-    }
-    .theme-toggle svg { width: 18px; height: 18px; }
-    /* Sun zeigen im Dark-Mode (zum Light-Wechsel), Moon im Light-Mode */
-    :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
-    :root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
-    #sound-toggle .icon-sound-off { display: none; }
-    #sound-toggle[data-sound="off"] .icon-sound-on  { display: none; }
-    #sound-toggle[data-sound="off"] .icon-sound-off { display: inline-block; }
-    #sound-toggle[data-sound="off"] { opacity: 0.6; }
-    #push-toggle .icon-push-off { display: none; }
-    #push-toggle[data-push="off"] .icon-push-on  { display: none; }
-    #push-toggle[data-push="off"] .icon-push-off { display: inline-block; }
-    #push-toggle[data-push="off"] { opacity: 0.6; }
-    #push-toggle[data-push="denied"] { opacity: 0.35; cursor: not-allowed; }
-    #push-toggle:not([data-push]) { display: none; } /* hidden until SW check */
 
     /* ── D3: Search-Filter ─────────────────────────────────────────── */
     .dashboard-header-left {
@@ -3027,29 +2990,6 @@
     .conn-status[data-state="disconnected"] { color: var(--red); background: var(--red-dim); }
 
     /* ── D4: Keyboard-Shortcut Help Overlay ─────────────────────────── */
-    /* Der Trigger sitzt rechts oben im Header neben dem Theme-Toggle und
-       teilt sich dessen Look (36×36, gleiche Borders, gleicher Hover). */
-    .kbd-help-trigger {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-    .kbd-help-trigger:hover {
-      background: var(--bg-card-hover);
-      color: var(--teal);
-      border-color: var(--teal-glow-strong);
-    }
     .kbd-help-overlay {
       position: fixed;
       inset: 0;
@@ -3485,21 +3425,6 @@
       </button>
       <div class="logo-mark">&gt;_</div>
       <div class="logo-text"><span data-i18n="header.logoProduct">Claude Code</span> <span>Hub</span></div>
-    </div>
-    <div class="header-right">
-      <button class="theme-toggle" id="push-toggle" type="button" data-i18n-attr="aria-label:header.pushToggleAria;title:header.pushToggleTitle" aria-label="Toggle push notifications" title="Push notifications (works with tab closed)">
-        <svg class="icon-push-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><circle cx="12" cy="2" r="1" fill="currentColor" stroke="none"/></svg>
-        <svg class="icon-push-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-      </button>
-      <button class="theme-toggle" id="sound-toggle" type="button" data-i18n-attr="aria-label:header.soundToggleAria;title:header.soundToggleTitle" aria-label="Toggle sound alerts" title="Toggle sound alerts">
-        <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-        <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-      </button>
-      <button class="theme-toggle" id="theme-toggle" type="button" data-i18n-attr="aria-label:header.themeToggleAria;title:header.themeToggleTitle" aria-label="Toggle theme" title="Toggle theme (t)">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
-      <button class="kbd-help-trigger" id="kbd-help-trigger" type="button" data-i18n-attr="aria-label:header.kbdHelpAria;title:header.kbdHelpTitle" aria-label="Show keyboard shortcuts" title="Keyboard shortcuts (?)">?</button>
     </div>
   </header>
 
@@ -4001,8 +3926,7 @@
     </div>
 
   <!-- ── Keyboard Help Overlay ───────────────────────────────── -->
-  <!-- Der Trigger-Button `#kbd-help-trigger` sitzt im Header rechts neben
-       dem Theme-Toggle. Hier nur noch das Overlay. -->
+  <!-- Geöffnet via Settings → Help → Keyboard Shortcuts oder dem globalen ?-Shortcut. -->
   <div class="kbd-help-overlay" id="kbd-help-overlay" role="dialog" aria-modal="true" aria-labelledby="kbd-help-title">
     <div class="kbd-help-box">
       <h3 id="kbd-help-title" data-i18n="kbdHelp.title">Keyboard Shortcuts</h3>
@@ -4539,10 +4463,6 @@
       updateSoundToggleUi();
     }
     function updateSoundToggleUi() {
-      const btn = document.getElementById('sound-toggle');
-      if (!btn) return;
-      btn.setAttribute('data-sound', soundEnabled() ? 'on' : 'off');
-      btn.title = soundEnabled() ? t('header.soundOffTitle') : t('header.soundOnTitle');
       // Mirror to Settings sound toggle.
       const settingsBtn = document.getElementById('settings-sound-toggle');
       if (settingsBtn) settingsBtn.setAttribute('aria-pressed', soundEnabled() ? 'true' : 'false');
@@ -4694,8 +4614,7 @@
     // ── Web Push ──────────────────────────────────────────────────
     // Natives Push über den Browser — Notification erscheint auch wenn
     // der Tab geschlossen ist. Setzt Service Worker + Push API voraus.
-    // Toggle-Button (#push-toggle) ist per CSS versteckt bis wir wissen
-    // ob der Browser SW+Push unterstützt. Dann: on / off / denied.
+    // Settings push toggle wird via initSettingsPush() initialisiert.
     const PUSH_KEY = 'cchub_push';
     let vapidPublicKey = null;
 
@@ -4710,18 +4629,6 @@
     function pushEnabled() { return localStorage.getItem(PUSH_KEY) === '1'; }
 
     function updatePushToggleUi(overrideState) {
-      const btn = document.getElementById('push-toggle');
-      if (!btn) return;
-      if (Notification.permission === 'denied') {
-        btn.setAttribute('data-push', 'denied');
-        btn.title = 'Push blocked — change browser settings';
-        // Mirror to Settings push toggle if already initialized.
-        if (typeof window._settingsPushSync === 'function') window._settingsPushSync();
-        return;
-      }
-      const on = overrideState !== undefined ? overrideState : pushEnabled();
-      btn.setAttribute('data-push', on ? 'on' : 'off');
-      btn.title = on ? 'Disable push notifications' : 'Enable push notifications (works with tab closed)';
       // Mirror to Settings push toggle if already initialized.
       if (typeof window._settingsPushSync === 'function') window._settingsPushSync();
     }
@@ -7364,7 +7271,6 @@
     }
 
     // ── Wiring: Event-Listener für Buttons + Shortcuts ────────────
-    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('refresh-btn').addEventListener('click', () => refreshSessions());
     document.getElementById('new-session-btn').addEventListener('click', openNewSessionModal);
     // Zurück-Button im Terminal-Toolbar → setView('dashboard') wird den
@@ -7524,22 +7430,7 @@
       setLayout('list');
       if (sessions === null) renderSkeleton();
     });
-    document.getElementById('sound-toggle').addEventListener('click', () => {
-      setSoundEnabled(!soundEnabled());
-    });
     updateSoundToggleUi();
-
-    document.getElementById('push-toggle').addEventListener('click', async () => {
-      if (Notification.permission === 'denied') {
-        showToast(t('toast.pushBlocked'), 'error');
-        return;
-      }
-      if (pushEnabled()) {
-        await disablePush();
-      } else {
-        await enablePush();
-      }
-    });
 
     document.getElementById('tab-sessions').addEventListener('click', () => setTab('sessions'));
     document.getElementById('tab-usage').addEventListener('click', () => setTab('usage'));
@@ -7596,12 +7487,12 @@
 
     // D4: Keyboard-Help-Overlay
     const helpOverlay = document.getElementById('kbd-help-overlay');
-    const helpTrigger = document.getElementById('kbd-help-trigger');
     function toggleHelp(force) {
       const open = force !== undefined ? force : !helpOverlay.classList.contains('open');
       helpOverlay.classList.toggle('open', open);
     }
-    helpTrigger.addEventListener('click', () => toggleHelp());
+    // Expose as global so initSettingsHelp() and the ? shortcut share the same fn.
+    window.openKbdHelpModal = () => toggleHelp(true);
     helpOverlay.addEventListener('click', (e) => {
       if (e.target === helpOverlay) toggleHelp(false);
     });
@@ -7699,7 +7590,7 @@
     }
 
     // ── Settings: Sound ───────────────────────────────────────────
-    // Mirrors the existing #sound-toggle via the shared setSoundEnabled() helper.
+    // Wires the Settings sound toggle via the shared setSoundEnabled() helper.
     function initSettingsSound() {
       const btn = document.getElementById('settings-sound-toggle');
       if (!btn) return;
@@ -7708,13 +7599,13 @@
       }
       btn.addEventListener('click', () => {
         const wantOn = btn.getAttribute('aria-pressed') !== 'true';
-        setSoundEnabled(wantOn);  // also calls updateSoundToggleUi() for old button
+        setSoundEnabled(wantOn);  // also calls updateSoundToggleUi() to sync Settings state
       });
       sync();
     }
 
     // ── Settings: Push ────────────────────────────────────────────
-    // Mirrors the existing #push-toggle, reusing enablePush() / disablePush().
+    // Wires the Settings push toggle, reusing enablePush() / disablePush().
     function initSettingsPush() {
       const btn = document.getElementById('settings-push-toggle');
       const permEl = document.getElementById('settings-push-permission');
@@ -7766,6 +7657,50 @@
       updatePermissionDisplay();
     }
 
+    // ── Settings: Help ────────────────────────────────────────────
+    // Wires the "Keyboard shortcuts" row to open the kbd-help overlay.
+    // Uses window.openKbdHelpModal which is set up in the D4 section.
+    function initSettingsHelp() {
+      const row = document.getElementById('settings-kbd-shortcuts-row');
+      if (!row) return;
+      row.addEventListener('click', () => {
+        if (typeof window.openKbdHelpModal === 'function') {
+          window.openKbdHelpModal();
+        } else {
+          // Fallback: directly show the overlay element
+          const overlay = document.getElementById('kbd-help-overlay');
+          if (overlay) overlay.classList.add('open');
+        }
+      });
+    }
+
+    // ── Settings: About ───────────────────────────────────────────
+    // Fetches version + uptime from /healthz and populates the About section.
+    function formatDurationShort(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return '—';
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      if (d > 0) return `${d}d ${h}h ${m}m`;
+      if (h > 0) return `${h}h ${m}m`;
+      return `${m}m`;
+    }
+    async function initSettingsAbout() {
+      const curEl = document.getElementById('settings-current-version');
+      const upEl = document.getElementById('settings-uptime');
+      if (!curEl || !upEl) return;
+      try {
+        const res = await fetch('/healthz', { cache: 'no-store' });
+        if (!res.ok) throw new Error('healthz failed');
+        const data = await res.json();
+        curEl.textContent = data.version ? 'v' + data.version : '—';
+        upEl.textContent = formatDurationShort(data.uptimeSeconds);
+      } catch {
+        curEl.textContent = '—';
+        upEl.textContent = '—';
+      }
+    }
+
     // ── Init ─────────────────────────────────────────────────────
     // setView() zuerst — setzt body[data-current-view] und damit die
     // Sichtbarkeit aller drei Top-Level-Views. Default: Dashboard.
@@ -7780,13 +7715,14 @@
     // im Projekte- oder Usage-Tab ist.
     openNotifyWs();
     // Web Push: Service Worker registrieren + VAPID-Key holen.
-    // Macht den Push-Toggle-Button sichtbar, falls Browser es unterstützt.
     initPush();
     // Settings page: wire controls.
     initSettingsAppearance();
     initSettingsLanguage();
     initSettingsSound();
     initSettingsPush();
+    initSettingsHelp();
+    initSettingsAbout(); // async, fire-and-forget
 
     // ── v0.6.0 FileBrowser ───────────────────────────────────────
     window.FileBrowser = (() => {
