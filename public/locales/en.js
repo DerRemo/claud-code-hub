@@ -156,7 +156,6 @@ window.__I18N_BUNDLES.en = {
   'preview.loading': 'Loading…',
   'preview.tooLarge': 'Too large for preview. Open in terminal.',
   'preview.unknownBinary': 'Unknown binary type.',
-  'preview.error': 'Error: {message}',
 
   // Upload toast stack
   'upload.status.queued': 'queued',
@@ -165,6 +164,7 @@ window.__I18N_BUNDLES.en = {
   'upload.status.tooLargeServer': 'too large (server)',
   'upload.status.exists': 'exists',
   'upload.status.networkError': 'Network error',
+  'upload.status.httpError': 'Error {status}',
   'upload.conflict.rename': 'Rename',
   'upload.conflict.overwrite': 'Overwrite',
   'upload.conflict.abort': 'Cancel',
@@ -203,6 +203,7 @@ window.__I18N_BUNDLES.en = {
 
   // Modals — New Project
   'modal.newProject.title': 'Create New Project',
+  'modal.newProject.description': 'Create a new <code>ROADMAP.md</code> in an existing directory. It will be registered as a project and appear in the Projects tab.',
   'modal.newProject.nameLabel': 'Display Name',
   'modal.newProject.namePlaceholder': 'e.g. Kalvo Backend',
   'modal.newProject.dirLabel': 'Project Directory',
@@ -239,7 +240,6 @@ window.__I18N_BUNDLES.en = {
   'toast.projectCreated': 'Project "{name}" created',
   'toast.enterDisplayName': 'Please enter a display name',
   'toast.selectProjectDir': 'Please select a project directory',
-  'toast.projectError': 'Error: {message}',
   'toast.releaseMissingVersions': 'Release and dev version must be set',
   'toast.releaseFailed': 'Release failed: {message}',
   'toast.muteFailed': 'Mute failed',
@@ -279,7 +279,7 @@ window.__I18N_BUNDLES.en = {
 
   // Login modal
   'login.title': 'Login',
-  'login.hint': 'Auth token from .env — stored once in your browser.',
+  'login.hint': 'Auth token from <code>.env</code> — stored once in your browser.',
   'login.tokenLabel': 'Token',
   'login.submit': 'Login',
 
@@ -301,7 +301,6 @@ window.__I18N_BUNDLES.en = {
   // Projects list view
   'projects.loading': 'Loading projects…',
   'projects.authExpired': 'Auth expired.',
-  'projects.error': 'Error: {message}',
   'projects.missingBadge': 'ROADMAP.md missing',
   'projects.releasedLabel': 'released',
   'projects.devLabel': 'dev',
@@ -335,17 +334,16 @@ window.__I18N_BUNDLES.en = {
   'projects.detail.newItemPlaceholder': 'New item…',
   'projects.detail.inlineHint': 'Enter = save · Esc = cancel',
   'projects.detail.conflict': 'Conflict — reloading…',
-  'projects.detail.itemError': 'Error: {message}',
   'projects.detail.itemAdded': 'Item added',
   'projects.detail.finalizeVersion': 'Finalize version',
   'projects.detail.startSessionHere': 'Start session here',
 
   // Release modal
   'projects.release.title': 'Finalize version',
-  'projects.release.description': 'All items from In Development will be moved to Released, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.',
-  'projects.release.versionLabel': 'Release Version (sets ## Released: vX)',
+  'projects.release.description': 'All items from <strong>In Development</strong> will be moved to <strong>Released</strong>, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.',
+  'projects.release.versionLabel': 'Release Version (sets <code>## Released: vX</code>)',
   'projects.release.versionPlaceholder': 'e.g. 0.3.0',
-  'projects.release.newDevLabel': 'New Dev Version (sets ## In Development: vY)',
+  'projects.release.newDevLabel': 'New Dev Version (sets <code>## In Development: vY</code>)',
   'projects.release.newDevPlaceholder': 'e.g. 0.4.0',
   'projects.release.narrativeLabel': 'Changelog Narrative (optional, free Markdown — no H2)',
   'projects.release.narrativePlaceholder': 'What was built in this version? Multiple paragraphs are fine.',
@@ -382,8 +380,11 @@ window.__I18N_BUNDLES.en = {
   // Usage dashboard — 30-day table
   'usage.tableTitle': '30-Day Table',
   'usage.table.date': 'Date',
+  'usage.table.input': 'Input',
+  'usage.table.output': 'Output',
   'usage.table.total': 'Total',
   'usage.table.cost': 'Cost',
+  'usage.table.sessions': 'Sessions',
 
   // Usage dashboard — tool usage
   'usage.toolTitle': 'Tool Usage',
@@ -404,4 +405,7 @@ window.__I18N_BUNDLES.en = {
   'usage.card.monthlySessions': 'Monthly Sessions',
   'usage.card.monthlyCacheRate': 'Monthly Cache Rate',
   'usage.card.autonomousChains': 'Autonomous Tool Chains',
+
+  // Common / shared
+  'common.errorWithMessage': 'Error: {message}',
 };

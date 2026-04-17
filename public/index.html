@@ -3544,7 +3544,7 @@
   <div class="modal-overlay" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="modal">
       <h2 id="login-title" data-i18n="login.title">Login</h2>
-      <p data-i18n="login.hint">Auth token from <code>.env</code> — stored once in your browser.</p>
+      <p data-i18n-html="login.hint">Auth token from <code>.env</code> — stored once in your browser.</p>
       <form id="login-form" action="/api/login" method="post" autocomplete="on">
         <input type="text" name="username" value="hub" autocomplete="username" style="display:none" tabindex="-1" aria-hidden="true">
         <div class="form-group">
@@ -3561,13 +3561,13 @@
   <div class="modal-overlay" id="release-modal" role="dialog" aria-modal="true" aria-labelledby="release-modal-title">
     <div class="modal">
       <h2 id="release-modal-title" data-i18n="projects.release.title">Finalize version</h2>
-      <p data-i18n="projects.release.description">All items from <strong>In Development</strong> will be moved to <strong>Released</strong>, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.</p>
+      <p data-i18n-html="projects.release.description">All items from <strong>In Development</strong> will be moved to <strong>Released</strong>, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.</p>
       <div class="form-group">
-        <label class="form-label" for="release-version-input" data-i18n="projects.release.versionLabel">Release Version (sets <code>## Released: vX</code>)</label>
+        <label class="form-label" for="release-version-input" data-i18n-html="projects.release.versionLabel">Release Version (sets <code>## Released: vX</code>)</label>
         <input class="form-input" id="release-version-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.3.0" data-i18n-attr="placeholder:projects.release.versionPlaceholder">
       </div>
       <div class="form-group">
-        <label class="form-label" for="release-new-dev-input" data-i18n="projects.release.newDevLabel">New Dev Version (sets <code>## In Development: vY</code>)</label>
+        <label class="form-label" for="release-new-dev-input" data-i18n-html="projects.release.newDevLabel">New Dev Version (sets <code>## In Development: vY</code>)</label>
         <input class="form-input" id="release-new-dev-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.4.0" data-i18n-attr="placeholder:projects.release.newDevPlaceholder">
       </div>
       <div class="form-group">
@@ -3587,7 +3587,7 @@
   <div class="modal-overlay" id="new-project-modal" role="dialog" aria-modal="true" aria-labelledby="new-project-title">
     <div class="modal">
       <h2 id="new-project-title" data-i18n="modal.newProject.title">Create New Project</h2>
-      <p>Create a new <code>ROADMAP.md</code> in an existing directory. It will be registered as a project and appear in the Projects tab.</p>
+      <p data-i18n-html="modal.newProject.description">Create a new <code>ROADMAP.md</code> in an existing directory. It will be registered as a project and appear in the Projects tab.</p>
       <div class="form-group">
         <label class="form-label" data-i18n="modal.newProject.nameLabel">Display Name</label>
         <input class="form-input" id="new-project-name" placeholder="e.g. Kalvo Backend" autocomplete="off" spellcheck="false" maxlength="80" data-i18n-attr="placeholder:modal.newProject.namePlaceholder">
@@ -4115,7 +4115,7 @@
           });
         });
       } catch (e) {
-        view.innerHTML = `<div class="usage-empty">${t('projects.error', { message: escapeHtml(e.message) })}</div>`;
+        view.innerHTML = `<div class="usage-empty">${t('common.errorWithMessage', { message: escapeHtml(e.message) })}</div>`;
       }
     }
 
@@ -4710,7 +4710,7 @@
         // am Stück erfasst werden können. Schließen via Escape/Button.
         input.value = '';
       } catch (e) {
-        if (e.status !== 401) showToast(t('toast.projectError', { message: e.message }), 'error');
+        if (e.status !== 401) showToast(t('common.errorWithMessage', { message: e.message }), 'error');
       } finally {
         input.disabled = false;
         input.focus();
@@ -4970,7 +4970,7 @@
                 btn.textContent = wasDone ? '[x]' : '[ ]';
                 btn.disabled = false;
                 if (err.status !== 401) {
-                  showProjectToast(t('projects.detail.itemError', { message: err.message }));
+                  showProjectToast(t('common.errorWithMessage', { message: err.message }));
                 }
               }
             }
@@ -5025,7 +5025,7 @@
                 showProjectToast(t('projects.detail.conflict'));
                 renderProjectDetail(p.id);
               } else if (err.status !== 401) {
-                showProjectToast(t('projects.detail.itemError', { message: err.message }));
+                showProjectToast(t('common.errorWithMessage', { message: err.message }));
               }
             }
           });
@@ -5084,7 +5084,7 @@
                 showProjectToast(t('projects.detail.conflict'));
                 renderProjectDetail(p.id);
               } else if (err.status !== 401) {
-                showProjectToast(t('projects.detail.itemError', { message: err.message }));
+                showProjectToast(t('common.errorWithMessage', { message: err.message }));
                 input.focus();
               }
             }
@@ -5104,7 +5104,7 @@
           });
         }
       } catch (e) {
-        body.innerHTML = `<div class="usage-empty">${t('projects.error', { message: escapeHtml(e.message) })}</div>`;
+        body.innerHTML = `<div class="usage-empty">${t('common.errorWithMessage', { message: escapeHtml(e.message) })}</div>`;
       }
     }
 
@@ -5218,7 +5218,7 @@
           const sessCell = hist.dailySessions?.[d.date] ?? '—';
           return `<tr${empty}><td>${d.date}</td><td class="num">${formatTokensCompact(d.input)}</td><td class="num">${formatTokensCompact(d.output)}</td><td class="num">${total ? formatTokensCompact(total) : '—'}</td><td class="num">${costCell}</td><td class="num">${sessCell}</td></tr>`;
         }).join('');
-        const tableHtml = `<div class="usage-section"><div class="us-title">${t('usage.tableTitle')}</div><div class="usage-table-wrap"><table class="usage-table"><thead><tr><th>${t('usage.table.date')}</th><th class="num">Input</th><th class="num">Output</th><th class="num">${t('usage.table.total')}</th><th class="num">${t('usage.table.cost')}</th><th class="num">Sessions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        const tableHtml = `<div class="usage-section"><div class="us-title">${t('usage.tableTitle')}</div><div class="usage-table-wrap"><table class="usage-table"><thead><tr><th>${t('usage.table.date')}</th><th class="num">${t('usage.table.input')}</th><th class="num">${t('usage.table.output')}</th><th class="num">${t('usage.table.total')}</th><th class="num">${t('usage.table.cost')}</th><th class="num">${t('usage.table.sessions')}</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 
         // ── Tool Usage ──
         let toolHtml = '';
@@ -6850,7 +6850,7 @@
           }
           data.entries.forEach(entry => root.appendChild(createNode(entry)));
         } catch (err) {
-          root.innerHTML = `<div class="tree-error">Error: ${escapeHtml(err.message)}</div>`;
+          root.innerHTML = `<div class="tree-error">${escapeHtml(t('common.errorWithMessage', { message: err.message }))}</div>`;
         }
       }
 
@@ -6976,7 +6976,7 @@
         // der Projekt-Detail-Fetch trifft sofort.
         setView('project-detail', { projectId: created.id });
       } catch (e) {
-        showToast(t('toast.projectError', { message: e.message }), 'error');
+        showToast(t('common.errorWithMessage', { message: e.message }), 'error');
       } finally {
         btn.disabled = false;
       }
@@ -7864,7 +7864,7 @@
             } catch {}
           }
         } catch (e) {
-          body.innerHTML = `<div class="preview-oversize">${t('preview.error', { message: (e && e.message) || e })}</div>`;
+          body.innerHTML = `<div class="preview-oversize">${t('common.errorWithMessage', { message: (e && e.message) || e })}</div>`;
         }
       }
 
@@ -8184,7 +8184,7 @@
               setTimeout(() => toast.remove(), 5000);
             } else {
               toast.classList.add('error');
-              toast.querySelector('.status').textContent = `Error ${xhr.status}`;
+              toast.querySelector('.status').textContent = t('upload.status.httpError', { status: xhr.status });
               setTimeout(() => toast.remove(), 5000);
             }
             resolve();
@@ -8226,7 +8226,7 @@
               toast.querySelector('.status').textContent = window.t('upload.status.done');
               setTimeout(() => toast.remove(), 2000);
             } else {
-              toast.querySelector('.status').textContent = `Error ${xhr.status}`;
+              toast.querySelector('.status').textContent = t('upload.status.httpError', { status: xhr.status });
               setTimeout(() => toast.remove(), 5000);
             }
           });
@@ -8315,6 +8315,11 @@
       scope.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (key) el.textContent = window.t(key);
+      });
+      // innerHTML — for translations that include trusted markup (<code>, <strong>)
+      scope.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (key) el.innerHTML = window.t(key);
       });
       // Attributes — format: "attr1:key1;attr2:key2"
       scope.querySelectorAll('[data-i18n-attr]').forEach(el => {
