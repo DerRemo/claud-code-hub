@@ -65,7 +65,7 @@ window.__I18N_BUNDLES.de = {
   'sessionCard.mute.muteAria': 'Stummschalten',
   'sessionCard.mute.enableAria': 'Benachrichtigungen aktivieren',
   'sessionCard.mute.mutedTitle': 'Stummgeschaltet — klicken um zu aktivieren',
-  'sessionCard.mute.enabledTitle': 'Notifications an — klicken zum Stummschalten',
+  'sessionCard.mute.enabledTitle': 'Benachrichtigungen an — klicken zum Stummschalten',
 
   // Session card — pin button
   'sessionCard.pin.pinAria': 'Anpinnen',
@@ -243,8 +243,8 @@ window.__I18N_BUNDLES.de = {
   'toast.releaseMissingVersions': 'Release- und Dev-Version müssen gesetzt sein',
   'toast.releaseFailed': 'Release fehlgeschlagen: {message}',
   'toast.muteFailed': 'Mute fehlgeschlagen',
-  'toast.notifMuted': 'Notifications stumm',
-  'toast.notifActive': 'Notifications aktiv',
+  'toast.notifMuted': 'Benachrichtigungen stumm',
+  'toast.notifActive': 'Benachrichtigungen aktiv',
   'toast.pinFailed': 'Pinning fehlgeschlagen',
   'toast.pinOnlyKnown': 'Nur bekannte Sessions können gepinnt werden',
   'toast.sessionPinned': 'Session angepinnt',
@@ -272,7 +272,7 @@ window.__I18N_BUNDLES.de = {
 
   // Session card — git badge
   'sessionCard.git.statusTitle': 'Git-Status',
-  'sessionCard.git.dirtyTitle': 'Ungestagede Änderungen',
+  'sessionCard.git.dirtyTitle': 'Ungestagete Änderungen',
 
   // Session card — context tooltip
   'sessionCard.noClaudeData': 'Noch keine Claude-Code-Daten im cwd',
