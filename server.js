@@ -156,7 +156,7 @@ app.get('/healthz', (_req, res) => {
     uptimeSeconds: Math.floor((Date.now() - START_TIME) / 1000),
     sessions: getTmuxSessions().length,
     activePtys: activePtys.size,
-    version: process.env.npm_package_version || null,
+    version: pkgJson.version || null,
   });
 });
 
