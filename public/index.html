@@ -331,12 +331,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
@@ -457,6 +451,57 @@
       margin: var(--space-3) var(--space-2);
     }
 
+    /* Settings entry pinned at the bottom of the sidebar */
+    .sidebar__settings-section {
+      margin-top: auto;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: var(--space-2);
+    }
+    .sidebar__settings-entry {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: inherit;
+      text-align: left;
+      min-height: 36px;
+      position: relative;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .sidebar__settings-entry:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+    .sidebar__settings-entry.is-active {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+    .sidebar__settings-entry .gear {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      stroke: currentColor;
+    }
+    .sidebar__settings-dot {
+      position: absolute;
+      top: 50%;
+      right: var(--space-3);
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent, #2dd4bf);
+      box-shadow: 0 0 6px rgba(45,212,191,.7);
+    }
+    .sidebar__settings-dot[hidden] { display: none; }
+
     .sidebar__empty {
       color: var(--text-muted);
       font-size: var(--text-xs);
@@ -521,7 +566,8 @@
       }
       /* Sidebar-Items bekommen volle 44px Touch-Target, sonst
          mogeln sich die Finger-Taps auf Nachbar-Zeilen. */
-      .sidebar__item { min-height: 44px; padding: var(--space-3); }
+      .sidebar__item,
+      .sidebar__settings-entry { min-height: 44px; padding: var(--space-3); }
       .sidebar__label { padding-top: var(--space-4); }
       .main-content { margin-left: 0; }
       /* Header auf Mobile entlasten — Logo-Mark weg (steht mittig zwischen
@@ -529,9 +575,6 @@
       .header .logo-mark { display: none; }
       .header .logo-text { font-size: 15px; }
       .header { gap: var(--space-2); padding-left: max(var(--space-3), env(safe-area-inset-left)); padding-right: max(var(--space-3), env(safe-area-inset-right)); }
-      .header-right { gap: var(--space-1); }
-      /* Header-Icon-Buttons auf 44px für Touch-Komfort */
-      .header .theme-toggle { width: 44px; height: 44px; }
     }
 
     /* ── Terminal-Header (neu, in .terminal-view) ───────────────── */
@@ -2152,6 +2195,7 @@
     body[data-current-view="dashboard"]      .main-content [data-view="dashboard"]      { display: block; }
     body[data-current-view="terminal"]       .main-content [data-view="terminal"]       { display: flex; }
     body[data-current-view="project-detail"] .main-content [data-view="project-detail"] { display: flex; }
+    body[data-current-view="settings"]       .main-content [data-view="settings"]       { display: block; }
 
     /* ── Terminal View ─────────────────────────────────────────────── */
     /* --kb-inset wird von JS gesetzt wenn die iOS-Tastatur auftaucht —
@@ -2490,7 +2534,6 @@
     .session-card:focus-visible,
     .search-input:focus-visible,
     .layout-toggle-btn:focus-visible,
-    .theme-toggle:focus-visible,
     .tree-row:focus-visible {
       outline: 2px solid var(--teal);
       outline-offset: 2px;
@@ -2505,40 +2548,6 @@
       }
       .session-card.card-enter { animation: none !important; }
     }
-
-    /* ── Theme-Toggle-Button im Header ─────────────────────────────── */
-    .theme-toggle {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-    .theme-toggle:hover {
-      background: var(--bg-card-hover);
-      color: var(--teal);
-      border-color: var(--teal-glow-strong);
-    }
-    .theme-toggle svg { width: 18px; height: 18px; }
-    /* Sun zeigen im Dark-Mode (zum Light-Wechsel), Moon im Light-Mode */
-    :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
-    :root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
-    #sound-toggle .icon-sound-off { display: none; }
-    #sound-toggle[data-sound="off"] .icon-sound-on  { display: none; }
-    #sound-toggle[data-sound="off"] .icon-sound-off { display: inline-block; }
-    #sound-toggle[data-sound="off"] { opacity: 0.6; }
-    #push-toggle .icon-push-off { display: none; }
-    #push-toggle[data-push="off"] .icon-push-on  { display: none; }
-    #push-toggle[data-push="off"] .icon-push-off { display: inline-block; }
-    #push-toggle[data-push="off"] { opacity: 0.6; }
-    #push-toggle[data-push="denied"] { opacity: 0.35; cursor: not-allowed; }
-    #push-toggle:not([data-push]) { display: none; } /* hidden until SW check */
 
     /* ── D3: Search-Filter ─────────────────────────────────────────── */
     .dashboard-header-left {
@@ -2974,29 +2983,6 @@
     .conn-status[data-state="disconnected"] { color: var(--red); background: var(--red-dim); }
 
     /* ── D4: Keyboard-Shortcut Help Overlay ─────────────────────────── */
-    /* Der Trigger sitzt rechts oben im Header neben dem Theme-Toggle und
-       teilt sich dessen Look (36×36, gleiche Borders, gleicher Hover). */
-    .kbd-help-trigger {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-    .kbd-help-trigger:hover {
-      background: var(--bg-card-hover);
-      color: var(--teal);
-      border-color: var(--teal-glow-strong);
-    }
     .kbd-help-overlay {
       position: fixed;
       inset: 0;
@@ -3241,33 +3227,197 @@
       font-family: inherit;
     }
     .upload-toast button:hover { background: var(--accent-muted, rgba(45,212,191,.12)); }
+
+    /* ── Settings View ─────────────────────────────────────────────── */
+    .settings-view {
+      padding: var(--space-5, 20px);
+    }
+    .settings-view .view__header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .settings-view .view__header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .settings-page {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 720px;
+    }
+    .settings-card {
+      background: var(--bg-surface-translucent);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md, 8px);
+      padding: 16px;
+    }
+    .settings-card h2 {
+      margin: 0 0 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .settings-row + .settings-row {
+      border-top: 1px solid var(--border-subtle);
+    }
+    .settings-row label {
+      flex: 1;
+      color: var(--text-secondary);
+      font-size: var(--text-sm, 13px);
+    }
+    .settings-row__control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-row__hint {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .settings-row__meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .settings-row--link {
+      cursor: pointer;
+      background: transparent;
+      border: 0;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      width: 100%;
+      border-radius: 4px;
+      padding-left: 4px;
+      padding-right: 4px;
+      transition: background 0.12s ease;
+    }
+    .settings-row--link:hover {
+      background: var(--bg-card-hover);
+    }
+    .seg-btn {
+      padding: 5px 12px;
+      border-radius: var(--radius-sm, 6px);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: var(--text-sm, 13px);
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+    .seg-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+    .seg-btn.is-active {
+      background: var(--accent-muted);
+      border-color: var(--accent, #2dd4bf);
+      color: var(--accent, #2dd4bf);
+    }
+    .toggle-btn {
+      width: 40px;
+      height: 22px;
+      border-radius: 11px;
+      border: 0;
+      cursor: pointer;
+      background: var(--border);
+      position: relative;
+      transition: background .15s;
+      flex-shrink: 0;
+    }
+    .toggle-btn::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .15s;
+    }
+    .toggle-btn[aria-pressed="true"] { background: var(--accent, #2dd4bf); }
+    .toggle-btn[aria-pressed="true"]::after { transform: translateX(18px); }
+    .settings-about-changelog {
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(0,0,0,.15);
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .settings-about-changelog:empty { display: none; }
+    .settings-about-changelog h3,
+    .settings-about-changelog h4 { margin: 12px 0 6px; font-size: 13px; }
+    .settings-about-changelog ul { margin: 6px 0; padding-left: 20px; }
+    .settings-about-changelog code {
+      background: rgba(255,255,255,.08);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+    }
+    .settings-about-changelog a { color: var(--accent, #2dd4bf); text-decoration: underline; }
   </style>
+  <script src="/locales/en.js"></script>
+  <script src="/locales/de.js"></script>
+  <script>
+    // i18n translator bootstrap — mirrors lib/i18n.js createTranslator (tested there).
+    (function () {
+      const bundles = window.__I18N_BUNDLES || { en: {}, de: {} };
+      const DEFAULT_LANG = 'en';
+      let currentLang = DEFAULT_LANG;
+      try { currentLang = localStorage.getItem('cchub_lang') || DEFAULT_LANG; } catch (_) {}
+      if (currentLang !== 'en' && currentLang !== 'de') currentLang = DEFAULT_LANG;
+
+      function t(key, vars) {
+        const s = (bundles[currentLang] && bundles[currentLang][key])
+               ?? (bundles.en && bundles.en[key])
+               ?? key;
+        if (!vars) return s;
+        return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
+      }
+
+      window.t = t;
+      window.i18nApi = {
+        getLang() { return currentLang; },
+        setLang(lang) {
+          if (lang !== 'en' && lang !== 'de') return;
+          try { localStorage.setItem('cchub_lang', lang); } catch (_) {}
+          currentLang = lang;
+          document.documentElement.lang = lang;
+          // Task 8 callers should either reload the page (intended switch flow) or
+          // call window.applyI18nToDom(document) afterwards to re-render in-place.
+        },
+      };
+      document.documentElement.lang = currentLang;
+    })();
+  </script>
 </head>
 <body>
 
   <!-- ── Header ───────────────────────────────────────────────── -->
   <header class="header">
     <div class="header-left">
-      <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">
+      <button class="sidebar-toggle" id="sidebar-toggle" type="button" data-i18n-attr="aria-label:header.sidebarToggleAria" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">
         <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
       <div class="logo-mark">&gt;_</div>
-      <div class="logo-text">Claude Code <span>Hub</span></div>
-    </div>
-    <div class="header-right">
-      <button class="theme-toggle" id="push-toggle" type="button" aria-label="Toggle push notifications" title="Push notifications (works with tab closed)">
-        <svg class="icon-push-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><circle cx="12" cy="2" r="1" fill="currentColor" stroke="none"/></svg>
-        <svg class="icon-push-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-      </button>
-      <button class="theme-toggle" id="sound-toggle" type="button" aria-label="Toggle sound alerts" title="Toggle sound alerts">
-        <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-        <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-      </button>
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme (t)">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
-      <button class="kbd-help-trigger" id="kbd-help-trigger" type="button" aria-label="Show keyboard shortcuts" title="Keyboard shortcuts (?)">?</button>
+      <div class="logo-text"><span data-i18n="header.logoProduct">Claude Code</span> <span>Hub</span></div>
     </div>
   </header>
 
@@ -3275,32 +3425,45 @@
   <div class="app-layout">
 
     <aside class="sidebar" id="sidebar" aria-label="Navigation">
-      <div class="sidebar__label">Sessions</div>
+      <div class="sidebar__label" data-i18n="sidebar.sessionsLabel">Sessions</div>
       <div id="sidebar-sessions">
-        <div class="sidebar__empty">Loading…</div>
+        <div class="sidebar__empty" data-i18n="sidebar.loading">Loading…</div>
       </div>
 
       <div class="sidebar__divider"></div>
 
-      <div class="sidebar__label">Navigation</div>
+      <div class="sidebar__label" data-i18n="sidebar.navigationLabel">Navigation</div>
       <button class="sidebar__item" type="button" data-sidebar-nav="sessions">
         <span class="sidebar__nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         </span>
-        <span class="sidebar__nav-label">Overview</span>
+        <span class="sidebar__nav-label" data-i18n="sidebar.nav.overview">Overview</span>
       </button>
       <button class="sidebar__item" type="button" data-sidebar-nav="projects">
         <span class="sidebar__nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
         </span>
-        <span class="sidebar__nav-label">Projects</span>
+        <span class="sidebar__nav-label" data-i18n="sidebar.nav.projects">Projects</span>
       </button>
       <button class="sidebar__item" type="button" data-sidebar-nav="usage">
         <span class="sidebar__nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
         </span>
-        <span class="sidebar__nav-label">Usage</span>
+        <span class="sidebar__nav-label" data-i18n="sidebar.nav.usage">Usage</span>
       </button>
+
+      <div class="sidebar__settings-section">
+        <button class="sidebar__settings-entry" id="sidebar-settings-entry" type="button"
+                data-i18n-attr="aria-label:settings.sidebarEntryAria" aria-label="Open settings">
+          <svg class="gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span class="sidebar__nav-label" data-i18n="settings.sidebarEntry">Settings</span>
+          <span class="sidebar__settings-dot" id="sidebar-settings-dot" aria-hidden="true" hidden></span>
+        </button>
+      </div>
     </aside>
 
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
@@ -3312,43 +3475,43 @@
     <div class="container">
       <div class="dashboard-header">
         <div class="dashboard-header-left">
-          <div class="dashboard-tabs" role="tablist" aria-label="Dashboard-Tabs">
-            <button class="dashboard-tab" id="tab-sessions" data-tab="sessions" type="button" role="tab">Sessions</button>
-            <button class="dashboard-tab" id="tab-usage" data-tab="usage" type="button" role="tab">Usage</button>
+          <div class="dashboard-tabs" role="tablist" data-i18n-attr="aria-label:dashboard.tablistAria" aria-label="Dashboard tabs">
+            <button class="dashboard-tab" id="tab-sessions" data-tab="sessions" type="button" role="tab" data-i18n="dashboard.tab.sessions">Sessions</button>
+            <button class="dashboard-tab" id="tab-usage" data-tab="usage" type="button" role="tab" data-i18n="dashboard.tab.usage">Usage</button>
             <button class="dashboard-tab dashboard-tab--new" id="tab-projects" data-tab="projects" type="button" role="tab" title="Project management (Phase 1 Step 2a — Mutations)">
-              Projects
+              <span data-i18n="dashboard.tab.projects">Projects</span>
               <span class="dashboard-tab-dot" aria-hidden="true"></span>
             </button>
           </div>
           <div class="search-wrapper" data-tab-scope="sessions projects">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="search" class="search-input" id="session-search" placeholder="Filter… (/)" autocomplete="off" spellcheck="false">
+            <input type="search" class="search-input" id="session-search" data-i18n-attr="placeholder:dashboard.filterPlaceholder" placeholder="Filter… (/)" autocomplete="off" spellcheck="false">
           </div>
         </div>
         <div class="dashboard-header-right" style="display: flex; gap: 8px; align-items: center;">
-          <div class="layout-toggle" role="group" aria-label="Layout" data-tab-scope="sessions">
-            <button class="layout-toggle-btn" id="layout-grid-btn" type="button" aria-label="Grid view" title="Grid (g)">
+          <div class="layout-toggle" role="group" data-i18n-attr="aria-label:dashboard.layoutAria" aria-label="Layout" data-tab-scope="sessions">
+            <button class="layout-toggle-btn" id="layout-grid-btn" type="button" data-i18n-attr="aria-label:dashboard.layout.gridAria;title:dashboard.layout.gridTitle" aria-label="Grid view" title="Grid (g)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             </button>
-            <button class="layout-toggle-btn" id="layout-list-btn" type="button" aria-label="List view" title="Liste (l)">
+            <button class="layout-toggle-btn" id="layout-list-btn" type="button" data-i18n-attr="aria-label:dashboard.layout.listAria;title:dashboard.layout.listTitle" aria-label="List view" title="List (l)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
             </button>
           </div>
           <button class="btn btn-ghost btn-sm" id="refresh-btn" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-            Refresh
+            <span data-i18n="dashboard.refresh">Refresh</span>
           </button>
           <button class="btn btn-ghost btn-sm" id="bulk-kill-btn" type="button" data-tab-scope="sessions">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-            Bulk Kill
+            <span data-i18n="dashboard.bulkKill">Bulk Kill</span>
           </button>
           <button class="btn btn-primary btn-sm" id="new-session-btn" type="button" data-tab-scope="sessions">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            New Session
+            <span data-i18n="dashboard.newSession">New Session</span>
           </button>
           <button class="btn btn-primary btn-sm" id="new-project-btn" type="button" data-tab-scope="projects">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            New Project
+            <span data-i18n="dashboard.newProject">New Project</span>
           </button>
         </div>
       </div>
@@ -3396,20 +3559,20 @@
   <div class="detail-view" id="project-detail-view" data-view="project-detail">
     <div class="detail-toolbar">
       <div class="detail-toolbar-left">
-        <button class="btn btn-ghost btn-sm" id="project-back-btn" type="button">
+        <button class="btn btn-ghost btn-sm" id="project-back-btn" type="button" data-i18n-attr="aria-label:terminal.toolbar.backAria;title:terminal.toolbar.backTitle" aria-label="Back to dashboard" title="Back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Back
+          <span class="btn-label" data-i18n="terminal.toolbar.back">Back</span>
         </button>
         <span class="detail-title" id="project-detail-title">—</span>
       </div>
       <div class="detail-toolbar-right">
         <button class="btn btn-ghost btn-sm" id="project-release-btn" type="button" hidden title="Move dev items to Released, bump versions, write changelog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Finalize version
+          <span data-i18n="projects.detail.finalizeVersion">Finalize version</span>
         </button>
         <button class="btn btn-primary btn-sm" id="project-new-session-btn" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Start session here
+          <span data-i18n="projects.detail.startSessionHere">Start session here</span>
         </button>
       </div>
     </div>
@@ -3447,27 +3610,27 @@
   <div class="terminal-view" id="terminal-view" data-view="terminal">
     <div class="terminal-toolbar">
       <div class="terminal-toolbar-left">
-        <button class="btn btn-ghost btn-sm" id="disconnect-btn" type="button" aria-label="Back to dashboard" title="Back">
+        <button class="btn btn-ghost btn-sm" id="disconnect-btn" type="button" aria-label="Back to dashboard" title="Back" data-i18n-attr="aria-label:terminal.toolbar.backAria;title:terminal.toolbar.backTitle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          <span class="btn-label">Back</span>
+          <span class="btn-label" data-i18n="terminal.toolbar.back">Back</span>
         </button>
         <span class="terminal-session-name" id="terminal-session-name"></span>
         <span class="conn-status" id="conn-status" data-state="connecting">
-          <span class="dot"></span><span id="conn-status-label">Verbinde</span>
+          <span class="dot"></span><span id="conn-status-label" data-i18n="terminal.connStatus.connecting">Connecting</span>
         </span>
       </div>
       <div class="terminal-toolbar-right">
-        <button class="btn btn-ghost btn-sm" id="btn-toggle-files" type="button" style="display:none" aria-label="Show files" title="Show files">
+        <button class="btn btn-ghost btn-sm" id="btn-toggle-files" type="button" style="display:none" aria-label="Show files" title="Show files" data-i18n-attr="aria-label:terminal.toolbar.filesAria;title:terminal.toolbar.filesTitle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span class="btn-label">Files</span>
+          <span class="btn-label" data-i18n="terminal.toolbar.files">Files</span>
         </button>
-        <button class="btn btn-ghost btn-sm" id="idea-capture-btn" type="button" hidden aria-label="Capture idea" title="Capture idea to project backlog">
+        <button class="btn btn-ghost btn-sm" id="idea-capture-btn" type="button" hidden aria-label="Capture idea" title="Capture idea to project backlog" data-i18n-attr="aria-label:terminal.toolbar.captureIdeaAria;title:terminal.toolbar.captureIdeaTitle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 4 12.7V17H8v-2.3A7 7 0 0 1 12 2z"/></svg>
-          <span class="btn-label">Capture idea</span>
+          <span class="btn-label" data-i18n="terminal.toolbar.captureIdea">Capture idea</span>
         </button>
-        <button class="btn btn-danger btn-sm" id="kill-current-btn" type="button" aria-label="Kill session" title="Kill session">
+        <button class="btn btn-danger btn-sm" id="kill-current-btn" type="button" aria-label="Kill session" title="Kill session" data-i18n-attr="aria-label:terminal.toolbar.killAria;title:terminal.toolbar.killTitle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          <span class="btn-label">Kill</span>
+          <span class="btn-label" data-i18n="terminal.toolbar.kill">Kill</span>
         </button>
       </div>
     </div>
@@ -3475,10 +3638,10 @@
       <aside class="files-sidebar" id="files-sidebar">
         <div class="files-toolbar">
           <span class="breadcrumb" id="files-breadcrumb">/</span>
-          <button id="files-mkdir" title="New Folder">+ Folder</button>
-          <button id="files-upload-picker" title="Upload File">+ File</button>
-          <button id="files-refresh" title="Refresh">⟳</button>
-          <button id="files-close" title="Close">×</button>
+          <button id="files-mkdir" title="New Folder" data-i18n-attr="title:filebrowser.toolbar.newFolderTitle" data-i18n="filebrowser.toolbar.newFolder">+ Folder</button>
+          <button id="files-upload-picker" title="Upload File" data-i18n-attr="title:filebrowser.toolbar.uploadTitle" data-i18n="filebrowser.toolbar.upload">+ File</button>
+          <button id="files-refresh" title="Refresh" data-i18n-attr="title:filebrowser.toolbar.refreshTitle">⟳</button>
+          <button id="files-close" title="Close" data-i18n-attr="title:filebrowser.toolbar.closeTitle">×</button>
         </div>
         <div class="files-tree" id="files-tree"></div>
       </aside>
@@ -3487,12 +3650,100 @@
     </div>
   </div>
 
+  <!-- ── Settings View ───────────────────────────────────────── -->
+  <div class="settings-view" id="settings-view" data-view="settings">
+    <div class="view__header">
+      <h1 data-i18n="settings.pageTitle">Settings</h1>
+    </div>
+    <div class="settings-page">
+
+      <!-- Appearance -->
+      <section class="settings-card" id="settings-appearance">
+        <h2 data-i18n="settings.section.appearance">Appearance</h2>
+        <div class="settings-row">
+          <label data-i18n="settings.appearance.themeLabel">Theme</label>
+          <div class="settings-row__control">
+            <button type="button" class="seg-btn" data-theme-value="light"
+                    data-i18n="settings.appearance.themeLight">Light</button>
+            <button type="button" class="seg-btn" data-theme-value="dark"
+                    data-i18n="settings.appearance.themeDark">Dark</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Language -->
+      <section class="settings-card" id="settings-language">
+        <h2 data-i18n="settings.section.language">Language</h2>
+        <div class="settings-row">
+          <label data-i18n="settings.language.label">Interface language</label>
+          <div class="settings-row__control">
+            <button type="button" class="seg-btn" data-lang-value="en"
+                    data-i18n="settings.language.english">English</button>
+            <button type="button" class="seg-btn" data-lang-value="de"
+                    data-i18n="settings.language.german">Deutsch</button>
+          </div>
+        </div>
+        <p class="settings-row__hint" data-i18n="settings.language.reloadHint">Switching reloads the page.</p>
+      </section>
+
+      <!-- Notifications -->
+      <section class="settings-card" id="settings-notifications">
+        <h2 data-i18n="settings.section.notifications">Notifications</h2>
+        <div class="settings-row">
+          <label data-i18n="settings.notifications.soundLabel">Sound alerts</label>
+          <div class="settings-row__control">
+            <button type="button" class="toggle-btn" id="settings-sound-toggle" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="settings.notifications.pushLabel">Push notifications</label>
+          <div class="settings-row__control">
+            <button type="button" class="toggle-btn" id="settings-push-toggle" aria-pressed="false"></button>
+            <span class="settings-row__meta" id="settings-push-permission"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Help -->
+      <section class="settings-card" id="settings-help">
+        <h2 data-i18n="settings.section.help">Help</h2>
+        <button type="button" class="settings-row settings-row--link" id="settings-kbd-shortcuts-row">
+          <span data-i18n="settings.help.kbdShortcutsLabel">Keyboard shortcuts</span>
+          <span class="settings-row__control"><span aria-hidden="true">→</span></span>
+        </button>
+      </section>
+
+      <!-- About -->
+      <section class="settings-card" id="settings-about">
+        <h2 data-i18n="settings.section.about">About</h2>
+        <div class="settings-row">
+          <label data-i18n="settings.about.currentVersion">Current version</label>
+          <div class="settings-row__control"><code id="settings-current-version">—</code></div>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="settings.about.latestVersion">Latest release</label>
+          <div class="settings-row__control">
+            <code id="settings-latest-version">—</code>
+            <a id="settings-release-link" href="#" target="_blank" rel="noopener" hidden
+               data-i18n="settings.about.viewRelease">View release</a>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="settings.about.uptimeLabel">Server uptime</label>
+          <div class="settings-row__control"><code id="settings-uptime">—</code></div>
+        </div>
+        <div class="settings-about-changelog" id="settings-about-changelog"></div>
+      </section>
+
+    </div>
+  </div>
+
     </main>
   </div>
   <!-- /.app-layout -->
 
   <!-- ── Touch-Toolbar über der iOS-Tastatur ───────────────────── -->
-  <div class="touch-bar" id="touch-bar" role="toolbar" aria-label="Virtuelle Tasten">
+  <div class="touch-bar" id="touch-bar" role="toolbar" aria-label="Virtual Keys" data-i18n-attr="aria-label:terminal.touchBar.aria">
     <button class="touch-key" type="button" data-seq="\x1b">Esc</button>
     <button class="touch-key" type="button" data-seq="\t">Tab</button>
     <button class="touch-key" type="button" data-ctrl>Ctrl</button>
@@ -3509,16 +3760,16 @@
   <!-- ── New Session Modal ────────────────────────────────────── -->
   <div class="modal-overlay" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="modal">
-      <h2 id="login-title">Anmeldung</h2>
-      <p>Auth-Token aus <code>.env</code> — wird einmalig im Browser gespeichert.</p>
+      <h2 id="login-title" data-i18n="login.title">Login</h2>
+      <p data-i18n-html="login.hint">Auth token from <code>.env</code> — stored once in your browser.</p>
       <form id="login-form" action="/api/login" method="post" autocomplete="on">
         <input type="text" name="username" value="hub" autocomplete="username" style="display:none" tabindex="-1" aria-hidden="true">
         <div class="form-group">
-          <label class="form-label" for="login-token">Token</label>
+          <label class="form-label" for="login-token" data-i18n="login.tokenLabel">Token</label>
           <input class="form-input" id="login-token" name="password" type="password" autocomplete="current-password" required spellcheck="false" autocapitalize="off">
         </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" type="submit">Login</button>
+          <button class="btn btn-primary" type="submit" data-i18n="login.submit">Login</button>
         </div>
       </form>
     </div>
@@ -3526,25 +3777,25 @@
 
   <div class="modal-overlay" id="release-modal" role="dialog" aria-modal="true" aria-labelledby="release-modal-title">
     <div class="modal">
-      <h2 id="release-modal-title">Finalize version</h2>
-      <p>All items from <strong>In Development</strong> will be moved to <strong>Released</strong>, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.</p>
+      <h2 id="release-modal-title" data-i18n="projects.release.title">Finalize version</h2>
+      <p data-i18n-html="projects.release.description">All items from <strong>In Development</strong> will be moved to <strong>Released</strong>, both version headers bumped, and a new changelog entry inserted at the top. This is a destructive action — make a git commit of ROADMAP.md first if you version it.</p>
       <div class="form-group">
-        <label class="form-label" for="release-version-input">Release Version (sets <code>## Released: vX</code>)</label>
-        <input class="form-input" id="release-version-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.3.0">
+        <label class="form-label" for="release-version-input" data-i18n-html="projects.release.versionLabel">Release Version (sets <code>## Released: vX</code>)</label>
+        <input class="form-input" id="release-version-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.3.0" data-i18n-attr="placeholder:projects.release.versionPlaceholder">
       </div>
       <div class="form-group">
-        <label class="form-label" for="release-new-dev-input">New Dev Version (sets <code>## In Development: vY</code>)</label>
-        <input class="form-input" id="release-new-dev-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.4.0">
+        <label class="form-label" for="release-new-dev-input" data-i18n-html="projects.release.newDevLabel">New Dev Version (sets <code>## In Development: vY</code>)</label>
+        <input class="form-input" id="release-new-dev-input" autocomplete="off" spellcheck="false" placeholder="e.g. 0.4.0" data-i18n-attr="placeholder:projects.release.newDevPlaceholder">
       </div>
       <div class="form-group">
-        <label class="form-label" for="release-narrative-input">Changelog Narrative (optional, free Markdown — no H2)</label>
-        <textarea class="form-input" id="release-narrative-input" rows="6" spellcheck="false" placeholder="What was built in this version? Multiple paragraphs are fine."></textarea>
+        <label class="form-label" for="release-narrative-input" data-i18n="projects.release.narrativeLabel">Changelog Narrative (optional, free Markdown — no H2)</label>
+        <textarea class="form-input" id="release-narrative-input" rows="6" spellcheck="false" placeholder="What was built in this version? Multiple paragraphs are fine." data-i18n-attr="placeholder:projects.release.narrativePlaceholder"></textarea>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="release-cancel">Cancel</button>
+        <button class="btn btn-ghost" type="button" id="release-cancel" data-i18n="projects.release.cancel">Cancel</button>
         <button class="btn btn-primary" type="button" id="release-submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Complete
+          <span data-i18n="projects.release.complete">Complete</span>
         </button>
       </div>
     </div>
@@ -3552,26 +3803,26 @@
 
   <div class="modal-overlay" id="new-project-modal" role="dialog" aria-modal="true" aria-labelledby="new-project-title">
     <div class="modal">
-      <h2 id="new-project-title">Create New Project</h2>
-      <p>Create a new <code>ROADMAP.md</code> in an existing directory. It will be registered as a project and appear in the Projects tab.</p>
+      <h2 id="new-project-title" data-i18n="modal.newProject.title">Create New Project</h2>
+      <p data-i18n-html="modal.newProject.description">Create a new <code>ROADMAP.md</code> in an existing directory. It will be registered as a project and appear in the Projects tab.</p>
       <div class="form-group">
-        <label class="form-label">Display Name</label>
-        <input class="form-input" id="new-project-name" placeholder="e.g. Kalvo Backend" autocomplete="off" spellcheck="false" maxlength="80">
+        <label class="form-label" data-i18n="modal.newProject.nameLabel">Display Name</label>
+        <input class="form-input" id="new-project-name" placeholder="e.g. Kalvo Backend" autocomplete="off" spellcheck="false" maxlength="80" data-i18n-attr="placeholder:modal.newProject.namePlaceholder">
       </div>
       <div class="form-group">
-        <label class="form-label">Project Directory</label>
+        <label class="form-label" data-i18n="modal.newProject.dirLabel">Project Directory</label>
         <div class="tree-picker" id="new-project-tree-picker">
           <div class="tree-selected" id="new-project-tree-selected" dir="rtl">~</div>
           <div class="tree-list" id="new-project-tree-root">
-            <div class="tree-empty">Loading…</div>
+            <div class="tree-empty" data-i18n="treePicker.loading">Loading…</div>
           </div>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="new-project-cancel">Cancel</button>
+        <button class="btn btn-ghost" type="button" id="new-project-cancel" data-i18n="modal.newProject.cancel">Cancel</button>
         <button class="btn btn-primary" type="button" id="new-project-submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Create
+          <span data-i18n="modal.newProject.create">Create</span>
         </button>
       </div>
     </div>
@@ -3581,17 +3832,17 @@
        aus der Terminal-Toolbar, schreibt direkt ins Projekt-Backlog. -->
   <div class="modal-overlay" id="idea-modal" role="dialog" aria-modal="true" aria-labelledby="idea-modal-title">
     <div class="modal">
-      <h2 id="idea-modal-title">Capture Idea</h2>
-      <p>Wird ins Backlog von <strong id="idea-modal-project">—</strong> geschrieben.</p>
+      <h2 id="idea-modal-title" data-i18n="modal.idea.title">Capture Idea</h2>
+      <p>Will be added to the backlog of <strong id="idea-modal-project">—</strong>.</p>
       <div class="form-group">
-        <label class="form-label" for="idea-modal-input">Short Description</label>
-        <input type="text" class="form-input" id="idea-modal-input" maxlength="500" autocomplete="off" spellcheck="false" placeholder="e.g. Sidebar should remember which session was last open">
+        <label class="form-label" for="idea-modal-input" data-i18n="modal.idea.descLabel">Short Description</label>
+        <input type="text" class="form-input" id="idea-modal-input" maxlength="500" autocomplete="off" spellcheck="false" placeholder="e.g. Sidebar should remember which session was last open" data-i18n-attr="placeholder:modal.idea.descPlaceholder">
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="idea-modal-cancel">Close</button>
+        <button class="btn btn-ghost" type="button" id="idea-modal-cancel" data-i18n="modal.idea.cancel">Close</button>
         <button class="btn btn-primary" type="button" id="idea-modal-save">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          Save
+          <span data-i18n="modal.idea.save">Save</span>
         </button>
       </div>
     </div>
@@ -3599,23 +3850,22 @@
 
   <div class="modal-overlay" id="new-session-modal" role="dialog" aria-modal="true" aria-labelledby="new-session-title">
     <div class="modal">
-      <h2 id="new-session-title">Start New Session</h2>
-      <p>Starte eine neue Claude Code Session auf deinem Mac mini.</p>
+      <h2 id="new-session-title" data-i18n="modal.newSession.title">Start New Session</h2>
       <div class="form-group">
-        <label class="form-label">Session Name</label>
-        <input class="form-input" id="new-session-name" placeholder="e.g. kalvo-feature" autocomplete="off" spellcheck="false">
+        <label class="form-label" data-i18n="modal.newSession.nameLabel">Session Name</label>
+        <input class="form-input" id="new-session-name" placeholder="e.g. kalvo-feature" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder:modal.newSession.namePlaceholder">
       </div>
       <div class="form-group">
-        <label class="form-label">Project Directory</label>
+        <label class="form-label" data-i18n="modal.newSession.dirLabel">Project Directory</label>
         <div class="tree-picker" id="tree-picker">
           <div class="tree-selected" id="tree-selected" dir="rtl">~</div>
           <div class="tree-list" id="tree-root">
-            <div class="tree-empty">Loading…</div>
+            <div class="tree-empty" data-i18n="treePicker.loading">Loading…</div>
           </div>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Start Command</label>
+        <label class="form-label" data-i18n="modal.newSession.cmdLabel">Start Command</label>
         <div class="select-wrapper">
           <select class="form-input" id="new-session-cmd">
             <option value="claude">claude</option>
@@ -3625,10 +3875,10 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button">Cancel</button>
+        <button class="btn btn-ghost" type="button" data-i18n="modal.newSession.cancel">Cancel</button>
         <button class="btn btn-primary" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          Start
+          <span data-i18n="modal.newSession.start">Start</span>
         </button>
       </div>
     </div>
@@ -3637,11 +3887,11 @@
   <!-- Bulk-Kill Modal -->
   <div class="modal-overlay" id="bulk-kill-modal" role="dialog" aria-modal="true" aria-labelledby="bulk-kill-title">
     <div class="modal">
-      <h2 id="bulk-kill-title">Kill Idle Sessions</h2>
+      <h2 id="bulk-kill-title" data-i18n="modal.bulkKill.title">Kill Idle Sessions</h2>
       <p id="bulk-kill-body"></p>
       <div class="modal-actions">
-        <button class="btn btn-ghost" type="button" id="bulk-kill-cancel">Cancel</button>
-        <button class="btn btn-danger" type="button" id="bulk-kill-confirm">Kill All</button>
+        <button class="btn btn-ghost" type="button" id="bulk-kill-cancel" data-i18n="modal.bulkKill.cancel">Cancel</button>
+        <button class="btn btn-danger" type="button" id="bulk-kill-confirm" data-i18n="modal.bulkKill.confirm">Kill All</button>
       </div>
     </div>
   </div>
@@ -3650,7 +3900,7 @@
     <div id="adopt-modal" class="modal-overlay">
       <div class="modal adopt-modal">
         <div class="modal-header">
-          <h2>Adopt Session</h2>
+          <h2 data-i18n="modal.adopt.title">Adopt Session</h2>
           <button class="modal-close" onclick="closeAdoptModal()">✕</button>
         </div>
         <div class="modal-body">
@@ -3658,31 +3908,30 @@
             The foreign tmux session <code id="adopt-source-name"></code> will be renamed to
             <code>cc-&lt;name&gt;</code> and managed by the Hub from now on.
           </p>
-          <label for="adopt-new-name">New Name (without cc- prefix)</label>
+          <label for="adopt-new-name" data-i18n="modal.adopt.nameLabel">New Name (without cc- prefix)</label>
           <input id="adopt-new-name" type="text" class="input" autocomplete="off" />
         </div>
         <div class="modal-footer">
-          <button class="btn btn-ghost" onclick="closeAdoptModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="submitAdopt()">Adopt</button>
+          <button class="btn btn-ghost" onclick="closeAdoptModal()" data-i18n="modal.adopt.cancel">Cancel</button>
+          <button class="btn btn-primary" onclick="submitAdopt()" data-i18n="modal.adopt.submit">Adopt</button>
         </div>
       </div>
     </div>
 
   <!-- ── Keyboard Help Overlay ───────────────────────────────── -->
-  <!-- Der Trigger-Button `#kbd-help-trigger` sitzt im Header rechts neben
-       dem Theme-Toggle. Hier nur noch das Overlay. -->
+  <!-- Geöffnet via Settings → Help → Keyboard Shortcuts oder dem globalen ?-Shortcut. -->
   <div class="kbd-help-overlay" id="kbd-help-overlay" role="dialog" aria-modal="true" aria-labelledby="kbd-help-title">
     <div class="kbd-help-box">
-      <h3 id="kbd-help-title">Keyboard Shortcuts</h3>
+      <h3 id="kbd-help-title" data-i18n="kbdHelp.title">Keyboard Shortcuts</h3>
       <dl>
-        <kbd>n</kbd><dd>New Session</dd>
-        <kbd>/</kbd><dd>Focus filter</dd>
-        <kbd>r</kbd><dd>Reload sessions</dd>
-        <kbd>g</kbd><dd>Grid layout</dd>
-        <kbd>l</kbd><dd>List layout</dd>
-        <kbd>t</kbd><dd>Toggle theme</dd>
-        <kbd>Esc</kbd><dd>Back / Close</dd>
-        <kbd>?</kbd><dd>This help</dd>
+        <kbd>n</kbd><dd data-i18n="kbdHelp.newSession">New Session</dd>
+        <kbd>/</kbd><dd data-i18n="kbdHelp.focusFilter">Focus filter</dd>
+        <kbd>r</kbd><dd data-i18n="kbdHelp.reload">Reload sessions</dd>
+        <kbd>g</kbd><dd data-i18n="kbdHelp.gridLayout">Grid layout</dd>
+        <kbd>l</kbd><dd data-i18n="kbdHelp.listLayout">List layout</dd>
+        <kbd>t</kbd><dd data-i18n="kbdHelp.toggleTheme">Toggle theme</dd>
+        <kbd>Esc</kbd><dd data-i18n="kbdHelp.backClose">Back / Close</dd>
+        <kbd>?</kbd><dd data-i18n="kbdHelp.thisHelp">This help</dd>
       </dl>
     </div>
   </div>
@@ -3715,6 +3964,7 @@
       document.documentElement.style.colorScheme = theme;
       if (persist) localStorage.setItem('cchub_theme', theme);
       if (currentTerminal) applyTerminalTheme(currentTerminal);
+      if (typeof window._settingsAppearanceSync === 'function') window._settingsAppearanceSync();
     }
     function toggleTheme() {
       setTheme(getTheme() === 'dark' ? 'light' : 'dark');
@@ -3775,12 +4025,12 @@
     }
 
     // ── View-Manager ───────────────────────────────────────────────
-    // Drei Top-Level-Views: dashboard, terminal, project-detail.
+    // Vier Top-Level-Views: dashboard, terminal, project-detail, settings.
     // Einzige zentrale Stelle die zwischen ihnen schaltet. Kümmert sich
     // um: body[data-current-view], History-Integration, Polling-Lifecycle,
     // view-spezifischen Init (Terminal-Attach / Project-Lade).
     let currentView = 'dashboard';
-    const VALID_VIEWS = new Set(['dashboard', 'terminal', 'project-detail']);
+    const VALID_VIEWS = new Set(['dashboard', 'terminal', 'project-detail', 'settings']);
 
     function setView(name, opts = {}) {
       if (!VALID_VIEWS.has(name)) name = 'dashboard';
@@ -3803,6 +4053,8 @@
           history.pushState({ view: 'terminal', sessionName }, '');
         } else if (name === 'project-detail' && history.state?.view !== 'project-detail') {
           history.pushState({ view: 'project-detail', projectId }, '');
+        } else if (name === 'settings' && history.state?.view !== 'settings') {
+          history.pushState({ view: 'settings' }, '');
         } else if (name === 'dashboard' && history.state?.view && history.state.view !== 'dashboard') {
           // Zurück zu Dashboard ohne fromPopstate → history.back() auslösen,
           // damit der Eintrag aus dem History-Stack geräumt wird. popstate
@@ -3892,7 +4144,7 @@
     function formatResetCountdown(unixTs) {
       if (!unixTs) return '';
       const diff = unixTs * 1000 - Date.now();
-      if (diff <= 0) return 'Jetzt';
+      if (diff <= 0) return t('usage.resetNow');
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       if (hours >= 24) {
@@ -3918,12 +4170,12 @@
     function formatLimitsTooltip(limits) {
       if (!limits) return '';
       const parts = [];
-      if (limits.resets5h) parts.push('5h Reset ' + formatResetCountdown(limits.resets5h));
-      if (limits.resets7d) parts.push('7d Reset ' + formatResetCountdown(limits.resets7d));
-      return parts.join(' · ') || 'Usage limits';
+      if (limits.resets5h) parts.push(t('usage.limitResetBadge', { window: '5h', time: formatResetCountdown(limits.resets5h) }));
+      if (limits.resets7d) parts.push(t('usage.limitResetBadge', { window: '7d', time: formatResetCountdown(limits.resets7d) }));
+      return parts.join(' · ') || t('usage.limitStatus');
     }
     function formatContextTooltip(s) {
-      if (s.contextTokens == null) return 'No Claude Code data in cwd yet';
+      if (s.contextTokens == null) return t('sessionCard.noClaudeData');
       const tok = formatContextTokens(s.contextTokens).replace(' ctx', '');
       const lim = s.contextLimit >= 1_000_000
         ? `${(s.contextLimit / 1_000_000).toFixed(0)}M`
@@ -3934,14 +4186,14 @@
     function renderGitBadge(git) {
       if (!git) return '';
       const { branch, dirty, ahead, behind } = git;
-      const dirtyDot = dirty ? '<span class="git-dirty-dot" title="Unstaged changes" aria-label="dirty"></span>' : '';
+      const dirtyDot = dirty ? `<span class="git-dirty-dot" title="${t('sessionCard.git.dirtyTitle')}" aria-label="dirty"></span>` : '';
       // ahead/behind nur zeigen wenn Upstream existiert UND Wert != 0
       const abParts = [];
       if (ahead !== null && ahead > 0) abParts.push(`↑${ahead}`);
       if (behind !== null && behind > 0) abParts.push(`↓${behind}`);
       const ab = abParts.length ? `<span class="git-ab">${abParts.join(' ')}</span>` : '';
       return `
-        <div class="session-meta-item git-badge" title="Git status">
+        <div class="session-meta-item git-badge" title="${t('sessionCard.git.statusTitle')}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>
           <span class="git-branch">${escapeHtml(branch)}</span>${dirtyDot}${ab}
         </div>`;
@@ -3954,7 +4206,8 @@
     }
 
     // ── Projects-View ──────────────────────────────────────────────
-    const PROJECTS_EMPTY_HTML = `
+    function buildProjectsEmptyHtml() {
+      return `
       <div class="cmd-output-block" role="region" aria-label="Projects — empty">
         <div class="cmd-line cmd-line--prompt">
           <span class="cmd-prompt">$</span>
@@ -3963,10 +4216,10 @@
         <hr class="cmd-rule">
         <div class="cmd-line cmd-line--lead">
           <span class="cmd-marker">›</span>
-          <span>No ROADMAP.md files found.</span>
+          <span>${t('projects.emptyNoFiles')}</span>
         </div>
         <div class="cmd-block">
-          <p>Create a <span class="cmd-path">ROADMAP.md</span> in a project under <span class="cmd-path">~/Projects/*</span> — it will be registered on the next server restart.</p>
+          <p>${t('projects.emptyInstruction')}</p>
         </div>
         <hr class="cmd-rule">
         <div class="cmd-status">
@@ -3974,6 +4227,7 @@
           <span class="cmd-cursor" aria-hidden="true">▊</span>
         </div>
       </div>`;
+    }
 
     // Sucht (falls Query nicht leer) über /api/projects/search und
     // rendert die Treffer-Liste UNTER der normalen Projekte-Liste.
@@ -3995,9 +4249,9 @@
         const matches = data.matches || [];
         const block = document.createElement('div');
         block.className = 'roadmap-search-results';
-        const header = `<h3>Roadmap matches for "${escapeHtml(q)}" (${matches.length}${data.truncated ? '+' : ''})</h3>`;
+        const header = `<h3>${t('projects.search.header', { q: escapeHtml(q), count: String(matches.length) + (data.truncated ? '+' : '') })}</h3>`;
         if (matches.length === 0) {
-          block.innerHTML = header + '<div class="roadmap-search-empty">No matching items found.</div>';
+          block.innerHTML = header + `<div class="roadmap-search-empty">${t('projects.search.empty')}</div>`;
         } else {
           const items = matches.map(m => `
             <li class="roadmap-search-hit${m.done ? ' done' : ''}" data-project="${escapeHtml(m.projectId)}" data-line="${m.line}">
@@ -4028,13 +4282,13 @@
 
     async function renderProjects() {
       const view = document.getElementById('projects-view');
-      view.innerHTML = '<div class="usage-empty">Loading projects…</div>';
+      view.innerHTML = `<div class="usage-empty">${t('projects.loading')}</div>`;
       try {
         const res = await fetch('/api/projects', { headers: apiHeaders() });
         if (res.status === 401) {
           clearToken();
           showLoginModal();
-          view.innerHTML = '<div class="usage-empty">Auth expired.</div>';
+          view.innerHTML = `<div class="usage-empty">${t('projects.authExpired')}</div>`;
           return;
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -4042,7 +4296,7 @@
         const projects = data.projects || [];
 
         if (projects.length === 0) {
-          view.innerHTML = PROJECTS_EMPTY_HTML;
+          view.innerHTML = buildProjectsEmptyHtml();
           return;
         }
 
@@ -4058,16 +4312,16 @@
             <button class="project-card" type="button" data-project-id="${escapeHtml(p.id)}">
               <div class="project-card-head">
                 <span class="project-card-name">${escapeHtml(p.displayName)}</span>
-                ${p.missing ? '<span class="project-missing">ROADMAP.md missing</span>' : ''}
+                ${p.missing ? `<span class="project-missing">${t('projects.missingBadge')}</span>` : ''}
               </div>
               <div class="project-card-versions">
-                <span>released&nbsp;<strong>${relLabel}</strong></span>
+                <span>${t('projects.releasedLabel')}&nbsp;<strong>${relLabel}</strong></span>
                 <span class="project-card-sep">·</span>
-                <span>dev&nbsp;<strong>${devLabel}</strong></span>
+                <span>${t('projects.devLabel')}&nbsp;<strong>${devLabel}</strong></span>
               </div>
               <div class="project-card-progress">
                 <div class="project-card-progress-bar"><div style="width:${pct}%"></div></div>
-                <span class="project-card-progress-text">${devDone}/${devTotal} dev · ${p.backlogCount ?? 0} backlog</span>
+                <span class="project-card-progress-text">${t('projects.progress', { done: devDone, total: devTotal, backlog: p.backlogCount ?? 0 })}</span>
               </div>
             </button>`;
         }).join('');
@@ -4080,7 +4334,7 @@
           });
         });
       } catch (e) {
-        view.innerHTML = `<div class="usage-empty">Error: ${escapeHtml(e.message)}</div>`;
+        view.innerHTML = `<div class="usage-empty">${t('common.errorWithMessage', { message: escapeHtml(e.message) })}</div>`;
       }
     }
 
@@ -4202,10 +4456,9 @@
       updateSoundToggleUi();
     }
     function updateSoundToggleUi() {
-      const btn = document.getElementById('sound-toggle');
-      if (!btn) return;
-      btn.setAttribute('data-sound', soundEnabled() ? 'on' : 'off');
-      btn.title = soundEnabled() ? 'Turn sound alerts OFF' : 'Turn sound alerts ON';
+      // Mirror to Settings sound toggle.
+      const settingsBtn = document.getElementById('settings-sound-toggle');
+      if (settingsBtn) settingsBtn.setAttribute('aria-pressed', soundEnabled() ? 'true' : 'false');
     }
     let audioCtx = null;
     function ensureAudioCtx() {
@@ -4247,13 +4500,13 @@
     }
 
     // Inline-Patch des Session-Card-Badges wenn ein Hook-Event die activity
-    // mitliefert. Spiegelt `activityMap` aus dem Card-Renderer — bei
-    // Label-Änderungen dort unbedingt auch hier synchron halten.
+    // mitliefert. Mirrors `activityMap` from the card renderer; both share the same t() keys
+    // (sessionCard.status.*) so they can't drift.
     const ACTIVITY_BADGE = {
-      working: { cls: 'working', label: 'Working',      title: 'Claude is currently working (ESC in terminal to cancel)' },
-      waiting: { cls: 'waiting', label: 'Needs Input', title: 'Claude is waiting for your input' },
-      idle:    { cls: 'ready',   label: 'Ready',        title: 'Claude is ready for the next task' },
-      unknown: { cls: 'unknown', label: 'Active',         title: 'Session running, state unknown' },
+      working: { cls: 'working', get label() { return t('sessionCard.status.working'); },      get title() { return t('sessionCard.status.workingTitle'); } },
+      waiting: { cls: 'waiting', get label() { return t('sessionCard.status.needsInput'); },   get title() { return t('sessionCard.status.needsInputTitle'); } },
+      idle:    { cls: 'ready',   get label() { return t('sessionCard.status.ready'); },        get title() { return t('sessionCard.status.readyTitle'); } },
+      unknown: { cls: 'unknown', get label() { return t('sessionCard.status.active'); },       get title() { return t('sessionCard.status.activeTitle'); } },
     };
     function patchActivityBadge(name, activity) {
       const card = document.querySelector(`.session-card[data-name="${CSS.escape(name)}"]`);
@@ -4280,7 +4533,7 @@
       const list = document.getElementById('sidebar-sessions');
       if (!list) return;
       if (!Array.isArray(sessions) || sessions.length === 0) {
-        list.innerHTML = '<div class="sidebar__empty">No active sessions</div>';
+        list.innerHTML = `<div class="sidebar__empty">${t('sidebar.noActiveSessions')}</div>`;
       } else {
         // Reihenfolge: attached zuerst (optisch markiert über active-class),
         // danach nach created desc. Namen als data-session für patchActivityBadge.
@@ -4308,9 +4561,11 @@
     function updateSidebarNavActive() {
       const navItems = document.querySelectorAll('.sidebar__item[data-sidebar-nav]');
       navItems.forEach(el => el.classList.remove('sidebar__item--active'));
+      const settingsEntry = document.getElementById('sidebar-settings-entry');
+      if (settingsEntry) settingsEntry.classList.toggle('is-active', currentView === 'settings');
       if (currentView !== 'dashboard') {
-        // Im Terminal-/Project-Detail-View ist das aktive Element eine
-        // Session (wird in renderSidebar über data-session gesetzt).
+        // Im Terminal-/Project-Detail-/Settings-View ist das aktive Element entweder
+        // eine Session (data-session) oder der Settings-Button — kein Tab-Nav-Highlight.
         return;
       }
       const tab = getTab();
@@ -4346,14 +4601,13 @@
         card.classList.add('attention-flash');
       }
       const displayName = name.replace(/^cc-/, '');
-      showToast(`${displayName} has output`, 'info');
+      showToast(t('toast.sessionHasOutput', { name: displayName }), 'info');
     }
 
     // ── Web Push ──────────────────────────────────────────────────
     // Natives Push über den Browser — Notification erscheint auch wenn
     // der Tab geschlossen ist. Setzt Service Worker + Push API voraus.
-    // Toggle-Button (#push-toggle) ist per CSS versteckt bis wir wissen
-    // ob der Browser SW+Push unterstützt. Dann: on / off / denied.
+    // Settings push toggle wird via initSettingsPush() initialisiert.
     const PUSH_KEY = 'cchub_push';
     let vapidPublicKey = null;
 
@@ -4367,17 +4621,9 @@
 
     function pushEnabled() { return localStorage.getItem(PUSH_KEY) === '1'; }
 
-    function updatePushToggleUi(overrideState) {
-      const btn = document.getElementById('push-toggle');
-      if (!btn) return;
-      if (Notification.permission === 'denied') {
-        btn.setAttribute('data-push', 'denied');
-        btn.title = 'Push blocked — change browser settings';
-        return;
-      }
-      const on = overrideState !== undefined ? overrideState : pushEnabled();
-      btn.setAttribute('data-push', on ? 'on' : 'off');
-      btn.title = on ? 'Disable push notifications' : 'Enable push notifications (works with tab closed)';
+    function updatePushToggleUi() {
+      // Mirror to Settings push toggle if already initialized.
+      if (typeof window._settingsPushSync === 'function') window._settingsPushSync();
     }
 
     // Persistente Device-ID pro Browser-Installation. Wird beim ersten Laden
@@ -4433,11 +4679,11 @@
 
     // Push aktivieren: Permission → Subscribe → Server.
     async function enablePush() {
-      if (!vapidPublicKey) { showToast('VAPID key not loaded', 'error'); return; }
+      if (!vapidPublicKey) { showToast(t('toast.vapidNotLoaded'), 'error'); return; }
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        updatePushToggleUi(false);
-        if (permission === 'denied') showToast('Push blocked — please allow in browser settings', 'error');
+        updatePushToggleUi();
+        if (permission === 'denied') showToast(t('toast.pushBlocked'), 'error');
         return;
       }
       const reg = await navigator.serviceWorker.ready;
@@ -4448,7 +4694,7 @@
           applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
         });
       } catch (e) {
-        showToast('Push subscription failed: ' + e.message, 'error');
+        showToast(t('toast.pushSubFailed', { message: e.message }), 'error');
         return;
       }
       try {
@@ -4459,11 +4705,11 @@
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         localStorage.setItem(PUSH_KEY, '1');
-        updatePushToggleUi(true);
-        showToast('Push notifications enabled', 'info');
+        updatePushToggleUi();
+        showToast(t('toast.pushEnabled'), 'info');
       } catch (e) {
         await sub.unsubscribe().catch(() => {});
-        showToast('Subscription could not be saved: ' + e.message, 'error');
+        showToast(t('toast.pushSubSaveFailed', { message: e.message }), 'error');
       }
     }
 
@@ -4481,8 +4727,8 @@
         await sub.unsubscribe().catch(() => {});
       }
       localStorage.setItem(PUSH_KEY, '0');
-      updatePushToggleUi(false);
-      showToast('Push notifications disabled', 'info');
+      updatePushToggleUi();
+      showToast(t('toast.pushDisabled'), 'info');
     }
 
     // ── Project-Events WebSocket ───────────────────────────────────
@@ -4670,12 +4916,12 @@
       input.disabled = true;
       try {
         await patchItem(projectId, { action: 'add', section: 'backlog', text });
-        showToast('Idea added to backlog', 'success');
+        showToast(t('toast.ideaAdded'), 'success');
         // Rapid-Fire: Input leeren und offen halten, damit mehrere Ideen
         // am Stück erfasst werden können. Schließen via Escape/Button.
         input.value = '';
       } catch (e) {
-        if (e.status !== 401) showToast('Error: ' + e.message, 'error');
+        if (e.status !== 401) showToast(t('common.errorWithMessage', { message: e.message }), 'error');
       } finally {
         input.disabled = false;
         input.focus();
@@ -4734,7 +4980,7 @@
       }
 
       title.textContent = '…';
-      body.innerHTML = '<div class="usage-empty">Loading project…</div>';
+      body.innerHTML = `<div class="usage-empty">${t('projects.detail.loading')}</div>`;
       // Buttons default hidden — werden nach erfolgreichem Load wieder aktiviert.
       const startBtnEl = document.getElementById('project-new-session-btn');
       if (startBtnEl) startBtnEl.hidden = true;
@@ -4746,7 +4992,7 @@
         if (res.status === 401) {
           clearToken();
           showLoginModal();
-          body.innerHTML = '<div class="usage-empty">Auth expired.</div>';
+          body.innerHTML = `<div class="usage-empty">${t('projects.authExpired')}</div>`;
           return;
         }
         if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
@@ -4756,7 +5002,7 @@
 
         if (res.status === 404) {
           title.textContent = id;
-          body.innerHTML = '<div class="usage-empty">Project not found.</div>';
+          body.innerHTML = `<div class="usage-empty">${t('projects.detail.notFound')}</div>`;
           return;
         }
 
@@ -4772,11 +5018,11 @@
               <hr class="cmd-rule">
               <div class="cmd-line cmd-line--lead">
                 <span class="cmd-marker">›</span>
-                <span>ROADMAP.md not readable.</span>
+                <span>${t('projects.detail.roadmapNotReadable')}</span>
               </div>
               <div class="cmd-block">
                 <p>Path: <span class="cmd-path">${escapeHtml(p.path)}</span></p>
-                <p>Create a <span class="cmd-path">ROADMAP.md</span> in this directory and restart the server.</p>
+                <p>${t('projects.detail.roadmapMissingInstruction')}</p>
               </div>
               <hr class="cmd-rule">
               <div class="cmd-status">
@@ -4789,10 +5035,10 @@
 
         const renderItem = (it, sectionKey) => `
           <li class="roadmap-item${it.done ? ' done' : ''}" data-section="${sectionKey}" data-line="${it.line}">
-            <button class="roadmap-checkbox" type="button" aria-label="${it.done ? 'Mark as open' : 'Mark as done'}">${it.done ? '[x]' : '[ ]'}</button>
+            <button class="roadmap-checkbox" type="button" aria-label="${it.done ? t('projects.detail.markAsOpen') : t('projects.detail.markAsDone')}">${it.done ? '[x]' : '[ ]'}</button>
             <span class="roadmap-text">${escapeHtml(it.text)}</span>
             ${renderMetaPills(it.meta)}
-            <button class="roadmap-item-delete" type="button" aria-label="Delete item" title="Delete">×</button>
+            <button class="roadmap-item-delete" type="button" aria-label="${t('projects.detail.deleteItem')}" title="${t('projects.detail.deleteTitle')}">×</button>
           </li>`;
 
         const section = (label, version, items, sectionKey) => `
@@ -4800,8 +5046,8 @@
             <h3>${label}${version ? ` · <span class="roadmap-version">v${escapeHtml(version)}</span>` : ''}</h3>
             ${items.length
               ? `<ul class="roadmap-list">${items.map(it => renderItem(it, sectionKey)).join('')}</ul>`
-              : '<p class="roadmap-empty">— empty —</p>'}
-            <button class="roadmap-add-btn" type="button" data-section="${sectionKey}">+ Item</button>
+              : `<p class="roadmap-empty">${t('projects.detail.sectionEmpty')}</p>`}
+            <button class="roadmap-add-btn" type="button" data-section="${sectionKey}">${t('projects.detail.addItem')}</button>
           </section>`;
 
         // Sessions im cwd — wird aus globalem sessions-Cache gerendert.
@@ -4821,12 +5067,12 @@
         };
         const sessionsPanelHtml = `
           <div class="project-sessions-panel">
-            <h3>Offene Sessions (${linkedSessions.length})</h3>
+            <h3>${t('projects.detail.openSessions', { n: linkedSessions.length })}</h3>
             ${linkedSessions.length
               ? `<ul class="project-sessions-list">${linkedSessions.map(renderSessionItem).join('')}</ul>`
               : sessions === null
-                ? '<div class="project-sessions-empty">Loading sessions…</div>'
-                : '<div class="project-sessions-empty">No session running in this directory.</div>'}
+                ? `<div class="project-sessions-empty">${t('projects.detail.loadingSessions')}</div>`
+                : `<div class="project-sessions-empty">${t('projects.detail.noSessions')}</div>`}
           </div>`;
 
         // Toolbar-Button für "Session hier starten" aktivieren + Pfad
@@ -4856,11 +5102,11 @@
         body.innerHTML = `
           <div class="roadmap-meta-line"><span class="cmd-path">${escapeHtml(p.path)}</span></div>
           ${sessionsPanelHtml}
-          ${section('Released',       p.released?.version, p.released?.items || [], 'released')}
-          ${section('In Development', p.dev?.version,      p.dev?.items      || [], 'dev')}
-          ${section('Backlog / Ideas', null,               p.backlog         || [], 'backlog')}
+          ${section(t('projects.detail.sectionReleased'),     p.released?.version, p.released?.items || [], 'released')}
+          ${section(t('projects.detail.sectionDev'),          p.dev?.version,      p.dev?.items      || [], 'dev')}
+          ${section(t('projects.detail.sectionBacklog'), null,               p.backlog         || [], 'backlog')}
           ${p.changelog
-            ? `<section class="roadmap-section"><h3>Changelog</h3><pre class="roadmap-changelog">${escapeHtml(p.changelog)}</pre></section>`
+            ? `<section class="roadmap-section"><h3>${t('projects.detail.sectionChangelog')}</h3><pre class="roadmap-changelog">${escapeHtml(p.changelog)}</pre></section>`
             : ''}`;
 
         // Click-Delegation für die Session-Items
@@ -4925,7 +5171,7 @@
               renderProjectDetail(p.id);
             } catch (err) {
               if (err.status === 409) {
-                showProjectToast('Conflict — reloading…');
+                showProjectToast(t('projects.detail.conflict'));
                 renderProjectDetail(p.id);
               } else {
                 // Revert optimistic flip in allen Fehler-Pfaden
@@ -4935,7 +5181,7 @@
                 btn.textContent = wasDone ? '[x]' : '[ ]';
                 btn.disabled = false;
                 if (err.status !== 401) {
-                  showProjectToast('Error: ' + err.message);
+                  showProjectToast(t('common.errorWithMessage', { message: err.message }));
                 }
               }
             }
@@ -4954,7 +5200,7 @@
           const resetPending = () => {
             btn.classList.remove('confirm-pending');
             btn.textContent = '×';
-            btn.setAttribute('aria-label', 'Delete item');
+            btn.setAttribute('aria-label', t('projects.detail.deleteItem'));
             if (revertTimer) { clearTimeout(revertTimer); revertTimer = null; }
           };
 
@@ -4970,7 +5216,7 @@
             if (!btn.classList.contains('confirm-pending')) {
               btn.classList.add('confirm-pending');
               btn.textContent = '✓?';
-              btn.setAttribute('aria-label', 'Confirm delete');
+              btn.setAttribute('aria-label', t('projects.detail.confirmDelete'));
               revertTimer = setTimeout(resetPending, CONFIRM_REVERT_MS);
               return;
             }
@@ -4987,10 +5233,10 @@
               btn.disabled = false;
               resetPending();
               if (err.status === 409) {
-                showProjectToast('Conflict — reloading…');
+                showProjectToast(t('projects.detail.conflict'));
                 renderProjectDetail(p.id);
               } else if (err.status !== 401) {
-                showProjectToast('Error: ' + err.message);
+                showProjectToast(t('common.errorWithMessage', { message: err.message }));
               }
             }
           });
@@ -5018,8 +5264,8 @@
           const wrap = document.createElement('div');
           wrap.className = 'roadmap-inline-input';
           wrap.innerHTML = `
-            <input type="text" placeholder="New item…" maxlength="500" spellcheck="false">
-            <span class="inline-hint">Enter = save · Esc = cancel</span>
+            <input type="text" placeholder="${t('projects.detail.newItemPlaceholder')}" maxlength="500" spellcheck="false">
+            <span class="inline-hint">${t('projects.detail.inlineHint')}</span>
           `;
           btn.parentNode.insertBefore(wrap, btn);
           const input = wrap.querySelector('input');
@@ -5040,16 +5286,16 @@
             input.disabled = true;
             try {
               await patchItem(p.id, { action: 'add', section: sectionKey, text });
-              showProjectToast('Item added', 'success');
+              showProjectToast(t('projects.detail.itemAdded'), 'success');
               renderProjectDetail(p.id);
             } catch (err) {
               committing = false;
               input.disabled = false;
               if (err.status === 409) {
-                showProjectToast('Conflict — reloading…');
+                showProjectToast(t('projects.detail.conflict'));
                 renderProjectDetail(p.id);
               } else if (err.status !== 401) {
-                showProjectToast('Error: ' + err.message);
+                showProjectToast(t('common.errorWithMessage', { message: err.message }));
                 input.focus();
               }
             }
@@ -5069,7 +5315,7 @@
           });
         }
       } catch (e) {
-        body.innerHTML = `<div class="usage-empty">Error: ${escapeHtml(e.message)}</div>`;
+        body.innerHTML = `<div class="usage-empty">${t('common.errorWithMessage', { message: escapeHtml(e.message) })}</div>`;
       }
     }
 
@@ -5077,7 +5323,7 @@
     let _usageCountdownInterval = null;
     async function renderUsage() {
       const view = document.getElementById('usage-view');
-      view.innerHTML = '<div class="usage-empty">Loading usage data…</div>';
+      view.innerHTML = `<div class="usage-empty">${t('usage.loading')}</div>`;
       if (_usageCountdownInterval) { clearInterval(_usageCountdownInterval); _usageCountdownInterval = null; }
       try {
         const hdrs = apiHeaders();
@@ -5088,7 +5334,7 @@
         ]);
         if (histRes.status === 401) {
           clearToken(); showLoginModal();
-          view.innerHTML = '<div class="usage-empty">Auth expired.</div>';
+          view.innerHTML = `<div class="usage-empty">${t('projects.authExpired')}</div>`;
           return;
         }
         if (!histRes.ok) throw new Error(`HTTP ${histRes.status}`);
@@ -5097,7 +5343,7 @@
         const costs = costRes && costRes.ok ? await costRes.json() : null;
 
         if (!hist.monthTotal && hist.days.every(d => !d.input && !d.output) && !costs) {
-          view.innerHTML = '<div class="usage-empty">No data available — Claude Code was not active this month.</div>';
+          view.innerHTML = `<div class="usage-empty">${t('usage.noData')}</div>`;
           return;
         }
 
@@ -5119,23 +5365,23 @@
           const urgent7 = (cur.pct7d ?? 0) > 90 ? ' usage-limit-urgent' : '';
           limitHtml = `
             <div class="usage-limit-card">
-              <div class="ulc-title">Limit Status</div>
+              <div class="ulc-title">${t('usage.limitStatus')}</div>
               <div class="usage-limit-row">
                 <span class="usage-limit-label">5h</span>
                 <div class="usage-limit-bar"><div class="usage-limit-fill ${c5}" style="width:${Math.min(cur.pct5h ?? 0, 100)}%"></div></div>
                 <span class="usage-limit-pct ${c5}">${Math.round(cur.pct5h ?? 0)}%</span>
-                <span class="usage-limit-reset ${c5}${urgent5}" data-reset-ts="${cur.resets5h || ''}">Reset ${formatResetCountdown(cur.resets5h)}</span>
+                <span class="usage-limit-reset ${c5}${urgent5}" data-reset-ts="${cur.resets5h || ''}">${t('usage.reset', { time: formatResetCountdown(cur.resets5h) })}</span>
               </div>
               <div class="usage-limit-row">
                 <span class="usage-limit-label">7d</span>
                 <div class="usage-limit-bar"><div class="usage-limit-fill ${c7}" style="width:${Math.min(cur.pct7d ?? 0, 100)}%"></div></div>
                 <span class="usage-limit-pct ${c7}">${Math.round(cur.pct7d ?? 0)}%</span>
-                <span class="usage-limit-reset ${c7}${urgent7}" data-reset-ts="${cur.resets7d || ''}">Reset ${formatResetCountdown(cur.resets7d)}</span>
+                <span class="usage-limit-reset ${c7}${urgent7}" data-reset-ts="${cur.resets7d || ''}">${t('usage.reset', { time: formatResetCountdown(cur.resets7d) })}</span>
               </div>
-              ${(lim.peaks5h || lim.peaks7d) ? `<div class="usage-limit-peaks">Last 7 days: ${lim.peaks5h ?? 0}x &gt;90% (5h) · ${lim.peaks7d ?? 0}x &gt;90% (7d)</div>` : ''}
+              ${(lim.peaks5h || lim.peaks7d) ? `<div class="usage-limit-peaks">${t('usage.limitPeaks', { peaks5h: lim.peaks5h ?? 0, peaks7d: lim.peaks7d ?? 0 })}</div>` : ''}
             </div>`;
         } else {
-          limitHtml = `<div class="usage-limit-card"><div class="ulc-title">Limit Status</div><div style="color:var(--text-muted);font-size:13px">No limit data available</div></div>`;
+          limitHtml = `<div class="usage-limit-card"><div class="ulc-title">${t('usage.limitStatus')}</div><div style="color:var(--text-muted);font-size:13px">${t('usage.noLimitData')}</div></div>`;
         }
 
         // ── Heatmap ──
@@ -5144,7 +5390,7 @@
           const maxTok = Math.max(...hist.heatmap.map(h => h.tokens), 1);
           const heatMap = {};
           hist.heatmap.forEach(h => { heatMap[`${h.dow}-${h.hour}`] = h.tokens; });
-          const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+          const dayLabels = [t('usage.day.mon'), t('usage.day.tue'), t('usage.day.wed'), t('usage.day.thu'), t('usage.day.fri'), t('usage.day.sat'), t('usage.day.sun')];
           // Header row
           let cells = '<div class="hm-label"></div>';
           for (let h = 0; h < 24; h++) cells += `<div class="hm-hour-label">${h % 6 === 0 ? h : ''}</div>`;
@@ -5159,7 +5405,7 @@
               cells += `<div class="hm-cell" style="${bg}" title="${dayLabels[d]} ${h}:00 — ${formatTokensCompact(tok)}"></div>`;
             }
           }
-          heatmapHtml = `<div class="usage-section"><div class="us-title">Activity (Heatmap)</div><div class="usage-heatmap-wrap"><div class="usage-heatmap">${cells}</div></div></div>`;
+          heatmapHtml = `<div class="usage-section"><div class="us-title">${t('usage.heatmapTitle')}</div><div class="usage-heatmap-wrap"><div class="usage-heatmap">${cells}</div></div></div>`;
         }
 
         // ── Top Projects ──
@@ -5172,7 +5418,7 @@
               <div class="usage-bar-track"><div class="usage-bar-fill" style="width:${Math.round((p.tokens / maxP) * 100)}%"></div></div>
               <span class="usage-bar-count">${formatTokensCompact(p.tokens)}</span>
             </div>`).join('');
-          projectsHtml = `<div class="usage-section"><div class="us-title">Top Projects</div><div class="usage-bar-list">${bars}</div></div>`;
+          projectsHtml = `<div class="usage-section"><div class="us-title">${t('usage.topProjectsTitle')}</div><div class="usage-bar-list">${bars}</div></div>`;
         }
 
         // ── 30-Day Table ──
@@ -5183,7 +5429,7 @@
           const sessCell = hist.dailySessions?.[d.date] ?? '—';
           return `<tr${empty}><td>${d.date}</td><td class="num">${formatTokensCompact(d.input)}</td><td class="num">${formatTokensCompact(d.output)}</td><td class="num">${total ? formatTokensCompact(total) : '—'}</td><td class="num">${costCell}</td><td class="num">${sessCell}</td></tr>`;
         }).join('');
-        const tableHtml = `<div class="usage-section"><div class="us-title">30-Tage-Tabelle</div><div class="usage-table-wrap"><table class="usage-table"><thead><tr><th>Datum</th><th class="num">Input</th><th class="num">Output</th><th class="num">Gesamt</th><th class="num">Kosten</th><th class="num">Sessions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        const tableHtml = `<div class="usage-section"><div class="us-title">${t('usage.tableTitle')}</div><div class="usage-table-wrap"><table class="usage-table"><thead><tr><th>${t('usage.table.date')}</th><th class="num">${t('usage.table.input')}</th><th class="num">${t('usage.table.output')}</th><th class="num">${t('usage.table.total')}</th><th class="num">${t('usage.table.cost')}</th><th class="num">${t('usage.table.sessions')}</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 
         // ── Tool Usage ──
         let toolHtml = '';
@@ -5195,7 +5441,7 @@
               <div class="usage-bar-track"><div class="usage-bar-fill" style="width:${Math.round((t.count / maxT) * 100)}%"></div></div>
               <span class="usage-bar-count">${t.count}</span>
             </div>`).join('');
-          toolHtml = `<div class="usage-section"><div class="us-title">Tool-Nutzung</div><div class="usage-bar-list">${bars}</div></div>`;
+          toolHtml = `<div class="usage-section"><div class="us-title">${t('usage.toolTitle')}</div><div class="usage-bar-list">${bars}</div></div>`;
         }
 
         // ── Arbeitsweise ──
@@ -5204,23 +5450,23 @@
           const ws = hist.workStyle;
           const toolPct = Math.round((ws.toolUse / ws.total) * 100);
           const directPct = 100 - toolPct;
-          workHtml = `<div class="usage-section"><div class="us-title">Work Style</div><div class="usage-workstyle-bar"><div class="ws-tool" style="width:${toolPct}%"></div><div class="ws-direct" style="width:${directPct}%"></div></div><div class="usage-workstyle-labels"><span>Tool Chains <strong>${toolPct}%</strong> (${ws.toolUse})</span><span>Direct Answers <strong>${directPct}%</strong> (${ws.endTurn})</span></div></div>`;
+          workHtml = `<div class="usage-section"><div class="us-title">${t('usage.workStyleTitle')}</div><div class="usage-workstyle-bar"><div class="ws-tool" style="width:${toolPct}%"></div><div class="ws-direct" style="width:${directPct}%"></div></div><div class="usage-workstyle-labels"><span>${t('usage.workStyleToolChains', { pct: toolPct, n: ws.toolUse })}</span><span>${t('usage.workStyleDirectAnswers', { pct: directPct, n: ws.endTurn })}</span></div></div>`;
         }
 
         // ── Produktivitaet ──
         let prodHtml = '';
         if (costs) {
           const apiH = costs.totalApiDurationMs ? `${Math.round(costs.totalApiDurationMs / 3600000)}h` : '—';
-          prodHtml = `<div class="usage-section"><div class="us-title">Produktivitaet</div><div class="usage-prod-row"><div class="usage-prod-item"><div class="up-value up-added">+${(costs.totalLinesAdded || 0).toLocaleString()}</div><div class="up-label">Zeilen hinzugefuegt</div></div><div class="usage-prod-item"><div class="up-value up-removed">-${(costs.totalLinesRemoved || 0).toLocaleString()}</div><div class="up-label">Zeilen entfernt</div></div><div class="usage-prod-item"><div class="up-value up-time">${apiH}</div><div class="up-label">API-Zeit</div></div></div></div>`;
+          prodHtml = `<div class="usage-section"><div class="us-title">${t('usage.productivityTitle')}</div><div class="usage-prod-row"><div class="usage-prod-item"><div class="up-value up-added">+${(costs.totalLinesAdded || 0).toLocaleString()}</div><div class="up-label">${t('usage.linesAdded')}</div></div><div class="usage-prod-item"><div class="up-value up-removed">-${(costs.totalLinesRemoved || 0).toLocaleString()}</div><div class="up-label">${t('usage.linesRemoved')}</div></div><div class="usage-prod-item"><div class="up-value up-time">${apiH}</div><div class="up-label">${t('usage.apiTime')}</div></div></div></div>`;
         }
 
         // ── Assemble ──
         view.innerHTML = `
           <div class="usage-summary-grid">
-            <div class="usage-summary-card"><div class="usc-value">${costVal}</div><div class="usc-label">Monthly<br>Cost</div></div>
-            <div class="usage-summary-card"><div class="usc-value">${sessVal}</div><div class="usc-label">Monthly<br>Sessions</div></div>
-            <div class="usage-summary-card"><div class="usc-value">${cacheVal}</div><div class="usc-label">Monthly<br>Cache Rate</div></div>
-            <div class="usage-summary-card"><div class="usc-value">${autonomyVal}</div><div class="usc-label">Autonomous<br>Tool Chains</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${costVal}</div><div class="usc-label">${t('usage.card.monthlyCost')}</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${sessVal}</div><div class="usc-label">${t('usage.card.monthlySessions')}</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${cacheVal}</div><div class="usc-label">${t('usage.card.monthlyCacheRate')}</div></div>
+            <div class="usage-summary-card"><div class="usc-value">${autonomyVal}</div><div class="usc-label">${t('usage.card.autonomousChains')}</div></div>
           </div>
           ${limitHtml}
           <div class="usage-two-col">
@@ -5239,12 +5485,12 @@
         _usageCountdownInterval = setInterval(() => {
           view.querySelectorAll('.usage-limit-reset[data-reset-ts]').forEach(el => {
             const ts = parseInt(el.dataset.resetTs, 10);
-            if (ts) el.textContent = 'Reset ' + formatResetCountdown(ts);
+            if (ts) el.textContent = t('usage.reset', { time: formatResetCountdown(ts) });
           });
         }, 60000);
 
       } catch (e) {
-        view.innerHTML = `<div class="usage-empty">Load error: ${escapeHtml(e.message)}</div>`;
+        view.innerHTML = `<div class="usage-empty">${t('usage.loadError', { message: escapeHtml(e.message) })}</div>`;
       }
     }
 
@@ -5415,7 +5661,7 @@
           clearToken();
           sessions = [];
           renderSessions();
-          showToast('Invalid token — please re-enter', 'error');
+          showToast(t('toast.invalidToken'), 'error');
           showLoginModal();
           return;
         }
@@ -5450,7 +5696,7 @@
       } catch (err) {
         if (sessions === null) sessions = []; // erster Fetch fehlgeschlagen → nicht ewig Skeleton zeigen
         renderSessions();
-        showToast('Connection to server failed', 'error');
+        showToast(t('toast.connFailed'), 'error');
       }
     }
 
@@ -5497,17 +5743,17 @@
         if (sessions.length > 0 && q) {
           empty.innerHTML = `
             <div class="empty-state-icon">⌕</div>
-            <h3>No matches</h3>
-            <p>No session name or preview matches "${escapeHtml(q)}".</p>
+            <h3>${t('dashboard.emptyNoMatchesHeading')}</h3>
+            <p>${t('dashboard.emptyNoMatchesBody', { q: escapeHtml(q) })}</p>
           `;
         } else {
           empty.innerHTML = `
             <div class="empty-state-icon">&gt;_</div>
-            <h3>No active sessions</h3>
-            <p>Start a new Claude Code session to get started.</p>
+            <h3>${t('dashboard.emptyHeading')}</h3>
+            <p>${t('dashboard.emptyBody')}</p>
             <button class="btn btn-primary" data-action="new-session">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
-              New Session
+              ${t('dashboard.newSession')}
             </button>
           `;
         }
@@ -5536,14 +5782,14 @@
       }
 
       const activityMap = {
-        working: { cls: 'working', label: 'Working',       title: 'Claude is currently working (ESC in terminal to cancel)' },
-        waiting: { cls: 'waiting', label: 'Needs Input',  title: 'Claude is waiting for your input' },
-        idle:    { cls: 'ready',   label: 'Ready',         title: 'Claude is ready for the next task' },
-        unknown: { cls: 'unknown', label: 'Active',          title: 'Session running, state unknown' },
+        working: { cls: 'working', get label() { return t('sessionCard.status.working'); },      get title() { return t('sessionCard.status.workingTitle'); } },
+        waiting: { cls: 'waiting', get label() { return t('sessionCard.status.needsInput'); },   get title() { return t('sessionCard.status.needsInputTitle'); } },
+        idle:    { cls: 'ready',   get label() { return t('sessionCard.status.ready'); },        get title() { return t('sessionCard.status.readyTitle'); } },
+        unknown: { cls: 'unknown', get label() { return t('sessionCard.status.active'); },       get title() { return t('sessionCard.status.activeTitle'); } },
       };
 
       const renderMuteButton = (muted) => `
-        <button class="session-mute-btn" type="button" data-action="mute" data-muted="${muted ? 'true' : 'false'}" data-stop-propagation aria-label="${muted ? 'Enable notifications' : 'Mute'}" title="${muted ? 'Muted — click to enable' : 'Notifications on — click to mute'}">
+        <button class="session-mute-btn" type="button" data-action="mute" data-muted="${muted ? 'true' : 'false'}" data-stop-propagation aria-label="${muted ? t('sessionCard.mute.enableAria') : t('sessionCard.mute.muteAria')}" title="${muted ? t('sessionCard.mute.mutedTitle') : t('sessionCard.mute.enabledTitle')}">
           ${muted
             ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
@@ -5554,7 +5800,7 @@
       // nicht gerendert — sie haben keinen known-sessions-Eintrag und können
       // daher nicht persistiert werden (setPinned gibt 404).
       const renderPinButton = (pinned) => `
-        <button class="session-pin-btn" type="button" data-action="pin" data-pinned="${pinned ? 'true' : 'false'}" data-stop-propagation aria-label="${pinned ? 'Pinned — click to unpin' : 'Pin'}" title="${pinned ? 'Pinned — click to unpin' : 'Pin — drag session to end of list'}">
+        <button class="session-pin-btn" type="button" data-action="pin" data-pinned="${pinned ? 'true' : 'false'}" data-stop-propagation aria-label="${pinned ? t('sessionCard.pin.pinnedAria') : t('sessionCard.pin.pinAria')}" title="${pinned ? t('sessionCard.pin.pinnedTitle') : t('sessionCard.pin.pinTitle')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         </button>`;
 
@@ -5563,7 +5809,7 @@
         const age = formatAge(s.created);
         const safeName = escapeHtml(s.name);
         const act = activityMap[s.activity] || activityMap.unknown;
-        const label = s.activity === 'unknown' && !s.attached ? 'Dormant' : act.label;
+        const label = s.activity === 'unknown' && !s.attached ? t('sessionCard.status.dormant') : act.label;
         const unreadCls = unreadSessions.has(s.name) ? ' unread' : '';
         return `
           <div class="session-card${unreadCls}" data-status="running" data-name="${safeName}" data-attached="${s.attached}">
@@ -5599,11 +5845,11 @@
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-ghost btn-sm" data-action="connect">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                Connect
+                ${t('sessionCard.action.connect')}
               </button>
               <button class="btn btn-danger btn-sm" data-action="kill">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                Kill
+                ${t('sessionCard.action.kill')}
               </button>
             </div>
           </div>
@@ -5624,22 +5870,22 @@
                 <span class="icon">&gt;_</span>
                 ${escapeHtml(displayName)}
               </div>
-              <div class="session-status" title="Session is not active in tmux, can be restored">Dormant</div>
+              <div class="session-status" title="${t('sessionCard.dormantBadgeTitle')}">${t('sessionCard.status.dormant')}</div>
             </div>
             <div class="dormant-stub">
               <div class="path">${escapeHtml(s.path || '')}</div>
               <div>$ ${escapeHtml(s.command || 'claude')}</div>
-              <div>Last seen: ${escapeHtml(lastSeen)}</div>
+              <div>${t('sessionCard.lastSeen', { time: escapeHtml(lastSeen) })}</div>
             </div>
             ${s.git ? `<div class="session-meta" style="padding-top: var(--space-2)">${renderGitBadge(s.git)}</div>` : ''}
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-primary btn-sm" data-action="restore">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Restore
+                ${t('sessionCard.action.restore')}
               </button>
-              <button class="btn btn-ghost btn-sm" data-action="forget" title="Remove from list">
+              <button class="btn btn-ghost btn-sm" data-action="forget" title="${t('sessionCard.action.forgetTitle')}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-                Forget
+                ${t('sessionCard.action.forget')}
               </button>
             </div>
           </div>
@@ -5668,11 +5914,11 @@
             <div class="session-actions" data-stop-propagation>
               <button class="btn btn-primary btn-sm" data-action="adopt">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
-                Adopt
+                ${t('sessionCard.action.adopt')}
               </button>
               <button class="btn btn-ghost btn-sm" data-action="connect">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                Connect
+                ${t('sessionCard.action.connect')}
               </button>
             </div>
           </div>
@@ -5695,9 +5941,9 @@
       // Flash.
       const newOrder = [];
       const sectionSpecs = [
-        ['Active', byStatus.running, renderRunningCard],
-        ['Dormant', byStatus.dormant, renderDormantCard],
-        ['Foreign', byStatus.foreign, renderForeignCard],
+        [t('dashboard.section.active'),  byStatus.running, renderRunningCard],
+        [t('dashboard.section.dormant'), byStatus.dormant, renderDormantCard],
+        [t('dashboard.section.foreign'), byStatus.foreign, renderForeignCard],
       ];
       for (const [label, items, renderer] of sectionSpecs) {
         if (!items.length) continue;
@@ -5864,9 +6110,9 @@
             muteBtn.dataset.muted = String(next);
             const cached = sessions?.find(s => s.name === name);
             if (cached) cached.muted = next;
-            showToast(next ? 'Notifications muted' : 'Notifications active', 'info');
+            showToast(next ? t('toast.notifMuted') : t('toast.notifActive'), 'info');
           } catch {
-            showToast('Mute failed', 'error');
+            showToast(t('toast.muteFailed'), 'error');
           } finally {
             muteBtn.disabled = false;
           }
@@ -5888,17 +6134,17 @@
               body: JSON.stringify({ pinned: next }),
             });
             if (res.status === 404) {
-              showToast('Only known sessions can be pinned', 'error');
+              showToast(t('toast.pinOnlyKnown'), 'error');
               return;
             }
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             pinBtn.dataset.pinned = String(next);
             const cached = sessions?.find(s => s.name === name);
             if (cached) cached.pinned = next;
-            showToast(next ? 'Session pinned' : 'Session unpinned', 'info');
+            showToast(next ? t('toast.sessionPinned') : t('toast.sessionUnpinned'), 'info');
             refreshSessions(); // neu sortieren
           } catch {
-            showToast('Pin failed', 'error');
+            showToast(t('toast.pinFailed'), 'error');
           } finally {
             pinBtn.disabled = false;
           }
@@ -6002,7 +6248,7 @@
         const text = term.getSelection();
         if (!text) return true;
         navigator.clipboard.writeText(text).catch(() => {
-          showToast('Copy failed — clipboard not writable', 'error');
+          showToast(t('toast.copyFailed'), 'error');
         });
         return false;
       });
@@ -6122,9 +6368,9 @@
           term.focus();
           if (!text.trim()) return;
           navigator.clipboard.writeText(text).then(() => {
-            showToast(`Copied (${text.length} chars)`, 'success');
+            showToast(t('toast.copiedChars', { n: text.length }), 'success');
           }).catch(() => {
-            showToast('Copy failed — clipboard not writable', 'error');
+            showToast(t('toast.copyFailed'), 'error');
           });
         };
         clipboardAbort?.abort();
@@ -6164,7 +6410,7 @@
           const text = await navigator.clipboard.readText();
           if (text) { term.focus(); term.paste(text); }
         } catch {
-          showToast('Paste failed — clipboard not readable. Firefox: allow permission.', 'error');
+          showToast(t('toast.pasteFailed'), 'error');
         }
       };
       document.addEventListener('keydown', pasteIntercept, { capture: true, signal: clipboardAbort.signal });
@@ -6192,7 +6438,7 @@
             const text = await navigator.clipboard.readText();
             if (text) term.paste(text);
           } catch (err) {
-            showToast('Clipboard not readable — please allow browser permission', 'error');
+            showToast(t('toast.clipboardNotReadable'), 'error');
           }
         });
       }
@@ -6302,7 +6548,7 @@
         // Client-Selection unterdrücken. Nur zeigen wenn der User den Hint
         // noch nie gesehen hat.
         if (!localStorage.getItem('cchub_hint_copy_seen')) {
-          showToast('Tip: Shift+Drag or Alt+Drag selects and copies instantly', 'info');
+          showToast(t('toast.copyHint'), 'info');
           localStorage.setItem('cchub_hint_copy_seen', '1');
         }
       });
@@ -6321,7 +6567,7 @@
     // funktioniert. terminalRef/fitAddonRef/containerRef bleiben stabil.
     function openTerminalWebSocket(name, term, fitAddon, container, isReconnect) {
       const displayName = name.replace(/^cc-/, '');
-      setConnStatus('connecting', isReconnect ? `Reconnect ${reconnectAttempts}/${MAX_RECONNECT}` : 'Verbinde');
+      setConnStatus('connecting', isReconnect ? t('terminal.connStatus.reconnecting', { n: reconnectAttempts, max: MAX_RECONNECT }) : t('terminal.connStatus.connecting'));
 
       const protocols = AUTH_TOKEN ? [`bearer.${AUTH_TOKEN}`] : [];
       const ws = new WebSocket(wsUrl(name), protocols);
@@ -6329,9 +6575,9 @@
 
       ws.onopen = () => {
         reconnectAttempts = 0;
-        setConnStatus('connected', 'Connected');
+        setConnStatus('connected', t('terminal.connStatus.connected'));
         ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
-        if (!isReconnect) showToast(`Connected to ${displayName}`, 'success');
+        if (!isReconnect) showToast(t('toast.connected', { name: displayName }), 'success');
       };
 
       ws.onmessage = (event) => {
@@ -6347,13 +6593,13 @@
       ws.onclose = (ev) => {
         // 4001 = Auth failed, 4004 = Session gone → beide NICHT reconnecten
         if (ev.code === 4001) {
-          setConnStatus('disconnected', 'Auth missing');
-          showToast('Auth failed — invalid token', 'error');
+          setConnStatus('disconnected', t('terminal.connStatus.authMissing'));
+          showToast(t('toast.authFailed'), 'error');
           return;
         }
         if (ev.code === 4004) {
-          setConnStatus('disconnected', 'Session weg');
-          showToast('Session no longer exists', 'error');
+          setConnStatus('disconnected', t('terminal.connStatus.sessionGone'));
+          showToast(t('toast.sessionGone'), 'error');
           return;
         }
         // User-initiated disconnect (currentWs auf null gesetzt in disconnectTerminal) → ruhe
@@ -6361,16 +6607,16 @@
 
         if (reconnectAttempts < MAX_RECONNECT) {
           reconnectAttempts++;
-          setConnStatus('connecting', `Reconnect in 2s (${reconnectAttempts}/${MAX_RECONNECT})`);
-          term.write(`\r\n\x1b[90m── Connection lost, reconnect ${reconnectAttempts}/${MAX_RECONNECT} ──\x1b[0m\r\n`);
+          setConnStatus('connecting', t('terminal.connStatus.reconnectIn', { n: reconnectAttempts, max: MAX_RECONNECT }));
+          term.write(`\r\n\x1b[90m${t('terminal.msg.connLost', { n: reconnectAttempts, max: MAX_RECONNECT })}\x1b[0m\r\n`);
           clearTimeout(reconnectTimer);
           reconnectTimer = setTimeout(() => {
             // Session existiert noch? Vorher prüfen.
             openTerminalWebSocket(name, term, fitAddon, container, /*isReconnect=*/true);
           }, 2000);
         } else {
-          setConnStatus('disconnected', 'Disconnected');
-          term.write('\r\n\x1b[90m── Connection closed, reconnect limit reached ──\x1b[0m\r\n');
+          setConnStatus('disconnected', t('terminal.connStatus.disconnected'));
+          term.write(`\r\n\x1b[90m${t('terminal.msg.connClosed')}\x1b[0m\r\n`);
         }
       };
 
@@ -6504,34 +6750,34 @@
           headers: apiHeaders(),
         });
         if (res.status === 409) {
-          showToast('A session with this name already exists', 'error');
+          showToast(t('toast.restoreConflict'), 'error');
           return;
         }
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          showToast(body.error || 'Restore failed', 'error');
+          showToast(body.error || t('toast.restoreFailed'), 'error');
           return;
         }
-        showToast(`Session "${displayName}" restored`, 'success');
+        showToast(t('toast.sessionRestored', { name: displayName }), 'success');
         refreshSessions();
       } catch {
-        showToast('Connection error during restore', 'error');
+        showToast(t('toast.restoreConnError'), 'error');
       }
     }
 
     async function forgetSession(name) {
       const displayName = name.replace(/^cc-/, '');
-      if (!confirm(`Remove entry "${displayName}" from the list?\n\nThe session will not be killed (it is no longer running). Restore will no longer be possible.`)) return;
+      if (!confirm(t('confirm.forgetSession', { name: displayName }))) return;
       try {
         const res = await fetch(`/api/sessions/${encodeURIComponent(name)}/known`, {
           method: 'DELETE',
           headers: apiHeaders(),
         });
         if (!res.ok) throw new Error();
-        showToast(`"${displayName}" forgotten`, 'success');
+        showToast(t('toast.sessionForgotten', { name: displayName }), 'success');
         refreshSessions();
       } catch {
-        showToast('Forget failed', 'error');
+        showToast(t('toast.forgetFailed'), 'error');
       }
     }
 
@@ -6543,20 +6789,20 @@
           body: JSON.stringify({ newName }),
         });
         if (res.status === 409) {
-          showToast('Target name already in use', 'error');
+          showToast(t('toast.adoptNameInUse'), 'error');
           return false;
         }
         if (res.status === 400) {
           const body = await res.json().catch(() => ({}));
-          showToast(body.error || 'Invalid name', 'error');
+          showToast(body.error || t('toast.adoptInvalidName'), 'error');
           return false;
         }
         if (!res.ok) throw new Error();
-        showToast(`"${sourceName}" adopted as "cc-${newName}"`, 'success');
+        showToast(t('toast.adopted', { source: sourceName, name: newName }), 'success');
         refreshSessions();
         return true;
       } catch {
-        showToast('Adopt failed', 'error');
+        showToast(t('toast.adoptFailed'), 'error');
         return false;
       }
     }
@@ -6583,7 +6829,7 @@
       if (!currentAdoptSource) return;
       const newName = document.getElementById('adopt-new-name').value.trim();
       if (!newName) {
-        showToast('Please enter a name', 'error');
+        showToast(t('toast.enterName'), 'error');
         return;
       }
       const ok = await adoptSession(currentAdoptSource, newName);
@@ -6597,7 +6843,7 @@
     // ── Kill session ─────────────────────────────────────────────
     async function killSession(name) {
       const displayName = name.replace(/^cc-/, '');
-      if (!confirm(`Really kill session "${displayName}"?`)) return;
+      if (!confirm(t('confirm.killSession', { name: displayName }))) return;
 
       try {
         const res = await fetch(`/api/sessions/${encodeURIComponent(name)}`, {
@@ -6605,10 +6851,10 @@
           headers: apiHeaders(),
         });
         if (!res.ok) throw new Error('Failed');
-        showToast(`Session "${displayName}" killed`, 'success');
+        showToast(t('toast.sessionKilled', { name: displayName }), 'success');
         refreshSessions();
       } catch {
-        showToast('Failed to kill session', 'error');
+        showToast(t('toast.killFailed'), 'error');
       }
     }
 
@@ -6618,7 +6864,7 @@
         !s.attached && s.activity !== 'working' && s.activity !== 'waiting'
       );
       if (candidates.length === 0) {
-        showToast('No idle sessions to kill', 'info');
+        showToast(t('toast.noIdleSessions'), 'info');
         return;
       }
 
@@ -6627,7 +6873,7 @@
       body.textContent = '';
 
       const intro = document.createElement('span');
-      intro.textContent = `Terminating ${candidates.length} session${candidates.length === 1 ? '' : 's'} without recent activity:`;
+      intro.textContent = t('modal.bulkKill.intro', { count: candidates.length, plural: candidates.length === 1 ? '' : 's' });
       body.appendChild(intro);
 
       const ul = document.createElement('ul');
@@ -6641,7 +6887,7 @@
       if (candidates.length > 10) {
         const li = document.createElement('li');
         li.style.opacity = '0.6';
-        li.textContent = `and ${candidates.length - 10} more…`;
+        li.textContent = t('modal.bulkKill.andMore', { n: candidates.length - 10 });
         ul.appendChild(li);
       }
       body.appendChild(ul);
@@ -6692,9 +6938,9 @@
       cancelBtn.disabled = false;
 
       if (failed === 0) {
-        showToast(`${succeeded} session${succeeded === 1 ? '' : 's'} killed`, 'success');
+        showToast(t('toast.bulkKillDone', { n: succeeded, plural: succeeded === 1 ? '' : 's' }), 'success');
       } else {
-        showToast(`${succeeded} killed, ${failed} failed`, 'error');
+        showToast(t('toast.bulkKillPartial', { succeeded, failed }), 'error');
       }
       refreshSessions();
     });
@@ -6706,15 +6952,15 @@
       // refreshSessions() hintereinander triggern (disconnectTerminal ruft
       // selbst schon refresh auf).
       const displayName = name.replace(/^cc-/, '');
-      if (!confirm(`Really kill session "${displayName}"?`)) return;
+      if (!confirm(t('confirm.killSession', { name: displayName }))) return;
       fetch(`/api/sessions/${encodeURIComponent(name)}`, {
         method: 'DELETE',
         headers: apiHeaders(),
       }).then(res => {
         if (!res.ok) throw new Error();
-        showToast(`Session "${displayName}" killed`, 'success');
+        showToast(t('toast.sessionKilled', { name: displayName }), 'success');
       }).catch(() => {
-        showToast('Failed to kill session', 'error');
+        showToast(t('toast.killFailed'), 'error');
       }).finally(() => {
         disconnectTerminal();
         setView('dashboard');
@@ -6780,14 +7026,14 @@
           node.classList.add('expanded');
           const children = document.createElement('div');
           children.className = 'tree-children';
-          children.innerHTML = '<div class="tree-empty">Loading…</div>';
+          children.innerHTML = `<div class="tree-empty">${t('treePicker.loading')}</div>`;
           node.appendChild(children);
 
           try {
             const data = await fetchBrowse(entry.path);
             children.innerHTML = '';
             if (data.entries.length === 0) {
-              children.innerHTML = '<div class="tree-empty">(no subdirectories)</div>';
+              children.innerHTML = `<div class="tree-empty">${t('filebrowser.tree.noSubdirs')}</div>`;
               row.querySelector('.tree-arrow').classList.add('empty');
             } else {
               data.entries.forEach(ch => children.appendChild(createNode(ch)));
@@ -6804,18 +7050,18 @@
       async function init(skipSelect) {
         const root = rootEl();
         if (!root) return;
-        root.innerHTML = '<div class="tree-empty">Loading…</div>';
+        root.innerHTML = `<div class="tree-empty">${t('treePicker.loading')}</div>`;
         try {
           const data = await fetchBrowse('~');
           if (!skipSelect) setSelected(data.path);
           root.innerHTML = '';
           if (data.entries.length === 0) {
-            root.innerHTML = '<div class="tree-empty">(empty)</div>';
+            root.innerHTML = `<div class="tree-empty">${t('filebrowser.tree.pickerEmpty')}</div>`;
             return;
           }
           data.entries.forEach(entry => root.appendChild(createNode(entry)));
         } catch (err) {
-          root.innerHTML = `<div class="tree-error">Error: ${escapeHtml(err.message)}</div>`;
+          root.innerHTML = `<div class="tree-error">${escapeHtml(t('common.errorWithMessage', { message: err.message }))}</div>`;
         }
       }
 
@@ -6842,7 +7088,7 @@
       const command = document.getElementById('new-session-cmd').value.trim();
 
       if (!name) {
-        showToast('Please enter a session name', 'error');
+        showToast(t('toast.enterSessionName'), 'error');
         return;
       }
 
@@ -6854,16 +7100,16 @@
         });
 
         if (res.status === 409) {
-          showToast('Session with this name already exists', 'error');
+          showToast(t('toast.sessionNameExists'), 'error');
           return;
         }
         if (!res.ok) throw new Error('Failed');
 
-        showToast(`Session "${name}" started`, 'success');
+        showToast(t('toast.sessionStarted', { name }), 'success');
         closeNewSessionModal();
         refreshSessions();
       } catch {
-        showToast('Failed to create session', 'error');
+        showToast(t('toast.createSessionFailed'), 'error');
       }
     }
 
@@ -6913,11 +7159,11 @@
       const displayName = document.getElementById('new-project-name').value.trim();
       const path = projectTreePicker.getSelected();
       if (!displayName) {
-        showToast('Please enter a display name', 'error');
+        showToast(t('toast.enterDisplayName'), 'error');
         return;
       }
       if (!path) {
-        showToast('Please select a project directory', 'error');
+        showToast(t('toast.selectProjectDir'), 'error');
         return;
       }
       btn.disabled = true;
@@ -6936,12 +7182,12 @@
         }
         const created = await res.json();
         closeNewProjectModal();
-        showToast(`Project "${displayName}" created`, 'success');
+        showToast(t('toast.projectCreated', { name: displayName }), 'success');
         // Direkt in die Detail-View springen — Registry ist schon aktualisiert,
         // der Projekt-Detail-Fetch trifft sofort.
         setView('project-detail', { projectId: created.id });
       } catch (e) {
-        showToast('Error: ' + e.message, 'error');
+        showToast(t('common.errorWithMessage', { message: e.message }), 'error');
       } finally {
         btn.disabled = false;
       }
@@ -6993,32 +7239,100 @@
       return div.innerHTML;
     }
 
+    // ── Markdown-mini renderer ────────────────────────────────────
+    // Duplicate of lib/markdown-mini.js (tested there). Keep in sync if either copy changes.
+    (function () {
+      function mdEscapeHtml(s) {
+        return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+      }
+      function mdRenderInline(text) {
+        const parts = [];
+        let rest = text;
+        const codeRe = /`([^`]+)`/;
+        let m;
+        while ((m = rest.match(codeRe))) {
+          parts.push({ type: 'text', value: rest.slice(0, m.index) });
+          parts.push({ type: 'code', value: m[1] });
+          rest = rest.slice(m.index + m[0].length);
+        }
+        parts.push({ type: 'text', value: rest });
+        return parts.map(p => {
+          if (p.type === 'code') return `<code>${mdEscapeHtml(p.value)}</code>`;
+          let s = mdEscapeHtml(p.value);
+          s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) =>
+            `<a href="${mdEscapeHtml(url)}" target="_blank" rel="noopener">${label}</a>`);
+          s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+          s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+          s = s.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+          return s;
+        }).join('');
+      }
+      function mdRenderBlock(b) {
+        switch (b.kind) {
+          case 'h3': return `<h3>${mdRenderInline(b.text)}</h3>`;
+          case 'h4': return `<h4>${mdRenderInline(b.text)}</h4>`;
+          case 'ul': return `<ul>${b.items.map(i => `<li>${mdRenderInline(i)}</li>`).join('')}</ul>`;
+          case 'para': return `<p>${mdRenderInline(b.text).replace(/\n/g, '<br>')}</p>`;
+          default: return '';
+        }
+      }
+      function renderMarkdownMini(src) {
+        if (!src || typeof src !== 'string') return '';
+        const lines = src.replace(/\r\n?/g, '\n').split('\n');
+        const blocks = [];
+        let buffer = [];
+        let mode = null;
+        const flushBuffer = () => {
+          if (buffer.length === 0) return;
+          if (mode === 'ul') blocks.push({ kind: 'ul', items: buffer.map(l => l.replace(/^[-*]\s+/, '')) });
+          else if (mode === 'para') blocks.push({ kind: 'para', text: buffer.join('\n') });
+          buffer = [];
+          mode = null;
+        };
+        for (const raw of lines) {
+          const h2 = raw.match(/^##\s+(.*)$/);
+          const h3 = raw.match(/^###\s+(.*)$/);
+          const li = raw.match(/^[-*]\s+.+$/);
+          const blank = /^\s*$/.test(raw);
+          if (h3) { flushBuffer(); blocks.push({ kind: 'h4', text: h3[1] }); continue; }
+          if (h2) { flushBuffer(); blocks.push({ kind: 'h3', text: h2[1] }); continue; }
+          if (li) { if (mode !== 'ul') flushBuffer(); mode = 'ul'; buffer.push(raw); continue; }
+          if (blank) { flushBuffer(); continue; }
+          if (mode !== 'para') flushBuffer();
+          mode = 'para';
+          buffer.push(raw);
+        }
+        flushBuffer();
+        return blocks.map(mdRenderBlock).join('\n');
+      }
+      window.renderMarkdownMini = renderMarkdownMini;
+    })();
+
     function formatAge(timestamp) {
       const diff = Date.now() - timestamp;
       const mins = Math.floor(diff / 60000);
-      if (mins < 1) return 'Gerade eben';
-      if (mins < 60) return `vor ${mins}m`;
+      if (mins < 1) return window.t('time.justNow');
+      if (mins < 60) return window.t('time.mAgo', { n: mins });
       const hours = Math.floor(mins / 60);
-      if (hours < 24) return `vor ${hours}h`;
+      if (hours < 24) return window.t('time.hAgo', { n: hours });
       const days = Math.floor(hours / 24);
-      return `vor ${days}d`;
+      return window.t('time.dAgo', { n: days });
     }
 
     // Relative Zeit aus ISO-String für "zuletzt gesehen" in dormant Cards.
     function formatRelativeTime(iso) {
-      if (!iso) return 'unbekannt';
+      if (!iso) return window.t('time.unknown');
       const then = Date.parse(iso);
-      if (isNaN(then)) return 'unbekannt';
+      if (isNaN(then)) return window.t('time.unknown');
       const diff = Math.floor((Date.now() - then) / 1000);
-      if (diff < 60) return 'gerade eben';
-      if (diff < 3600) return `vor ${Math.floor(diff / 60)} min`;
-      if (diff < 86400) return `vor ${Math.floor(diff / 3600)} h`;
-      if (diff < 604800) return `vor ${Math.floor(diff / 86400)} Tagen`;
-      return `vor ${Math.floor(diff / 604800)} Wochen`;
+      if (diff < 60) return window.t('time.justNowLower');
+      if (diff < 3600) return window.t('time.minAgo', { n: Math.floor(diff / 60) });
+      if (diff < 86400) return window.t('time.hAgo', { n: Math.floor(diff / 3600) });
+      if (diff < 604800) return window.t('time.daysAgo', { n: Math.floor(diff / 86400) });
+      return window.t('time.weeksAgo', { n: Math.floor(diff / 604800) });
     }
 
     // ── Wiring: Event-Listener für Buttons + Shortcuts ────────────
-    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('refresh-btn').addEventListener('click', () => refreshSessions());
     document.getElementById('new-session-btn').addEventListener('click', openNewSessionModal);
     // Zurück-Button im Terminal-Toolbar → setView('dashboard') wird den
@@ -7076,7 +7390,7 @@
       const newDevVersion  = document.getElementById('release-new-dev-input').value.trim();
       const narrative      = document.getElementById('release-narrative-input').value;
       if (!projectId || !releaseVersion || !newDevVersion) {
-        showToast('Release and dev version must be set', 'error');
+        showToast(t('toast.releaseMissingVersions'), 'error');
         return;
       }
       const btn = document.getElementById('release-submit');
@@ -7093,10 +7407,10 @@
           throw new Error(err.detail || err.error || `HTTP ${res.status}`);
         }
         closeReleaseModal();
-        showProjectToast(`v${releaseVersion} finalized`, 'success');
+        showProjectToast(t('projects.release.finalized', { version: releaseVersion }), 'success');
         renderProjectDetail(projectId);
       } catch (e) {
-        showToast('Release failed: ' + e.message, 'error');
+        showToast(t('toast.releaseFailed', { message: e.message }), 'error');
       } finally {
         btn.disabled = false;
       }
@@ -7178,22 +7492,7 @@
       setLayout('list');
       if (sessions === null) renderSkeleton();
     });
-    document.getElementById('sound-toggle').addEventListener('click', () => {
-      setSoundEnabled(!soundEnabled());
-    });
     updateSoundToggleUi();
-
-    document.getElementById('push-toggle').addEventListener('click', async () => {
-      if (Notification.permission === 'denied') {
-        showToast('Push blocked — please allow in browser settings', 'error');
-        return;
-      }
-      if (pushEnabled()) {
-        await disablePush();
-      } else {
-        await enablePush();
-      }
-    });
 
     document.getElementById('tab-sessions').addEventListener('click', () => setTab('sessions'));
     document.getElementById('tab-usage').addEventListener('click', () => setTab('usage'));
@@ -7216,6 +7515,10 @@
           if (currentView !== 'dashboard') setView('dashboard');
           setTab(nav);
         }
+      }
+      const settingsBtn = e.target.closest('#sidebar-settings-entry');
+      if (settingsBtn) {
+        setView('settings');
       }
     });
 
@@ -7246,12 +7549,12 @@
 
     // D4: Keyboard-Help-Overlay
     const helpOverlay = document.getElementById('kbd-help-overlay');
-    const helpTrigger = document.getElementById('kbd-help-trigger');
     function toggleHelp(force) {
       const open = force !== undefined ? force : !helpOverlay.classList.contains('open');
       helpOverlay.classList.toggle('open', open);
     }
-    helpTrigger.addEventListener('click', () => toggleHelp());
+    // Expose as global so initSettingsHelp() and the ? shortcut share the same fn.
+    window.openKbdHelpModal = () => toggleHelp(true);
     helpOverlay.addEventListener('click', (e) => {
       if (e.target === helpOverlay) toggleHelp(false);
     });
@@ -7310,6 +7613,211 @@
       refreshSessions();
     });
 
+    // ── Settings: Appearance ──────────────────────────────────────
+    // Wires the Light/Dark seg-btns in the Appearance section.
+    // Calls the existing setTheme() so xterm-theme + colorScheme stay in sync.
+    function initSettingsAppearance() {
+      const buttons = document.querySelectorAll('#settings-appearance [data-theme-value]');
+      function syncActive() {
+        const current = getTheme();
+        buttons.forEach(b => b.classList.toggle('is-active', b.dataset.themeValue === current));
+      }
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          setTheme(btn.dataset.themeValue);
+          syncActive();
+        });
+      });
+      window._settingsAppearanceSync = syncActive;   // expose for setTheme to call
+      syncActive();
+    }
+
+    // ── Settings: Language ────────────────────────────────────────
+    // Wires the EN/DE seg-btns; reloads the page on change (same as before).
+    function initSettingsLanguage() {
+      const buttons = document.querySelectorAll('#settings-language [data-lang-value]');
+      function syncActive() {
+        const current = window.i18nApi.getLang();
+        buttons.forEach(b => b.classList.toggle('is-active', b.dataset.langValue === current));
+      }
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.dataset.langValue;
+          if (val === window.i18nApi.getLang()) return;
+          window.i18nApi.setLang(val);
+          location.reload();
+        });
+      });
+      syncActive();
+    }
+
+    // ── Settings: Sound ───────────────────────────────────────────
+    // Wires the Settings sound toggle via the shared setSoundEnabled() helper.
+    function initSettingsSound() {
+      const btn = document.getElementById('settings-sound-toggle');
+      if (!btn) return;
+      function sync() {
+        btn.setAttribute('aria-pressed', soundEnabled() ? 'true' : 'false');
+      }
+      btn.addEventListener('click', () => {
+        const wantOn = btn.getAttribute('aria-pressed') !== 'true';
+        setSoundEnabled(wantOn);  // also calls updateSoundToggleUi() to sync Settings state
+      });
+      sync();
+    }
+
+    // ── Settings: Push ────────────────────────────────────────────
+    // Wires the Settings push toggle, reusing enablePush() / disablePush().
+    function initSettingsPush() {
+      const btn = document.getElementById('settings-push-toggle');
+      const permEl = document.getElementById('settings-push-permission');
+      if (!btn || !permEl) return;
+
+      function updatePermissionDisplay() {
+        if (!('Notification' in window)) {
+          permEl.textContent = t('settings.notifications.pushUnsupported');
+          btn.disabled = true;
+          btn.setAttribute('aria-pressed', 'false');
+          return;
+        }
+        const perm = Notification.permission;
+        permEl.textContent = t(`settings.notifications.push.permission.${perm}`);
+        btn.disabled = (perm === 'denied');
+      }
+
+      function syncToggleState() {
+        btn.setAttribute('aria-pressed', pushEnabled() ? 'true' : 'false');
+      }
+
+      // updatePushToggleUi invokes window._settingsPushSync (set below) to mirror state to this button.
+      window._settingsPushSync = function() {
+        syncToggleState();
+        updatePermissionDisplay();
+      };
+
+      btn.addEventListener('click', async () => {
+        if (btn.disabled) return;
+        if (Notification.permission === 'denied') {
+          showToast(t('toast.pushBlocked'), 'error');
+          return;
+        }
+        try {
+          if (pushEnabled()) {
+            await disablePush();
+          } else {
+            await enablePush();
+          }
+        } catch (err) {
+          console.error('[settings] Push toggle failed:', err);
+          showToast(t('toast.pushToggleFailed'), 'error');
+        }
+        syncToggleState();
+        updatePermissionDisplay();
+      });
+
+      syncToggleState();
+      updatePermissionDisplay();
+    }
+
+    // ── Settings: Help ────────────────────────────────────────────
+    // Wires the "Keyboard shortcuts" row to open the kbd-help overlay.
+    // Uses window.openKbdHelpModal which is set up in the D4 section.
+    function initSettingsHelp() {
+      const row = document.getElementById('settings-kbd-shortcuts-row');
+      if (!row) return;
+      row.addEventListener('click', () => {
+        if (typeof window.openKbdHelpModal === 'function') {
+          window.openKbdHelpModal();
+        } else {
+          // Fallback: directly show the overlay element
+          const overlay = document.getElementById('kbd-help-overlay');
+          if (overlay) overlay.classList.add('open');
+        }
+      });
+    }
+
+    // ── Settings: About ───────────────────────────────────────────
+    // Fetches version + uptime from /healthz and populates the About section.
+    function formatDurationShort(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return '—';
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      if (d > 0) return `${d}d ${h}h ${m}m`;
+      if (h > 0) return `${h}h ${m}m`;
+      return `${m}m`;
+    }
+    async function initSettingsAbout() {
+      const curEl = document.getElementById('settings-current-version');
+      const upEl = document.getElementById('settings-uptime');
+      if (!curEl || !upEl) return;
+      try {
+        const res = await fetch('/healthz', { cache: 'no-store' });
+        if (!res.ok) throw new Error('healthz failed');
+        const data = await res.json();
+        curEl.textContent = data.version ? 'v' + data.version : '—';
+        upEl.textContent = formatDurationShort(data.uptimeSeconds);
+      } catch (e) {
+        console.warn('[Settings/About] /healthz fetch failed:', e);
+        curEl.textContent = '—';
+        upEl.textContent = '—';
+      }
+    }
+
+    // ── Settings: Update Check ────────────────────────────────────
+    // Fetches /api/version once at boot. On success, caches to window.__versionInfo,
+    // shows the dot on the sidebar Settings entry when a newer version is available,
+    // and populates the About panel with latest version + release link + changelog.
+    async function initUpdateCheck() {
+      try {
+        const res = await fetch('/api/version', {
+          headers: apiHeaders(),
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const info = await res.json();
+        window.__versionInfo = info;
+        renderUpdateDot(info);
+        renderAboutPanel(info);
+      } catch (e) {
+        console.warn('[Settings/UpdateCheck] /api/version fetch failed:', e);
+        // Silent in UI — no dot shown, About panel shows '—' (already the default).
+      }
+    }
+
+    function renderUpdateDot(info) {
+      const dot = document.getElementById('sidebar-settings-dot');
+      if (!dot) return;
+      if (info && info.isNewer) dot.removeAttribute('hidden');
+      else dot.setAttribute('hidden', '');
+    }
+
+    function renderAboutPanel(info) {
+      const latestEl = document.getElementById('settings-latest-version');
+      const linkEl = document.getElementById('settings-release-link');
+      const changelogEl = document.getElementById('settings-about-changelog');
+      if (!latestEl || !linkEl || !changelogEl) return;
+
+      if (!info || !info.latest) {
+        latestEl.textContent = '—';
+        linkEl.setAttribute('hidden', '');
+        changelogEl.innerHTML = '';
+        return;
+      }
+
+      const suffix = info.isNewer ? ' ' + window.t('settings.about.newAvailable') : '';
+      latestEl.textContent = 'v' + info.latest + suffix;
+
+      if (info.url) {
+        linkEl.href = info.url;
+        linkEl.removeAttribute('hidden');
+      } else {
+        linkEl.setAttribute('hidden', '');
+      }
+
+      changelogEl.innerHTML = window.renderMarkdownMini(info.changelogMd || '');
+    }
+
     // ── Init ─────────────────────────────────────────────────────
     // setView() zuerst — setzt body[data-current-view] und damit die
     // Sichtbarkeit aller drei Top-Level-Views. Default: Dashboard.
@@ -7324,8 +7832,15 @@
     // im Projekte- oder Usage-Tab ist.
     openNotifyWs();
     // Web Push: Service Worker registrieren + VAPID-Key holen.
-    // Macht den Push-Toggle-Button sichtbar, falls Browser es unterstützt.
     initPush();
+    // Settings page: wire controls.
+    initSettingsAppearance();
+    initSettingsLanguage();
+    initSettingsSound();
+    initSettingsPush();
+    initSettingsHelp();
+    initSettingsAbout(); // async, fire-and-forget
+    initUpdateCheck();   // async, fire-and-forget — fetches /api/version, renders dot + changelog
 
     // ── v0.6.0 FileBrowser ───────────────────────────────────────
     window.FileBrowser = (() => {
@@ -7421,7 +7936,7 @@
           if (entries.length === 0) {
             const empty = document.createElement('div');
             empty.style.cssText = 'padding:4px 8px;color:var(--text-muted,#666);font-size:11px;font-style:italic;';
-            empty.textContent = 'Empty';
+            empty.textContent = t('filebrowser.tree.empty');
             wrap.appendChild(empty);
           } else {
             for (const entry of entries) wrap.appendChild(renderRow(entry, relPath));
@@ -7476,7 +7991,7 @@
 
       async function renderRoot() {
         const tree = document.getElementById('files-tree');
-        tree.innerHTML = '<div style="padding:8px;color:var(--text-muted,#666);font-size:11px;">Loading…</div>';
+        tree.innerHTML = `<div style="padding:8px;color:var(--text-muted,#666);font-size:11px;">${t('filebrowser.tree.loading')}</div>`;
         try {
           const list = await fetchList('');
           tree.innerHTML = '';
@@ -7531,7 +8046,7 @@
             if (window.FileActions && window.currentProjectId) {
               window.FileActions.mkdirPrompt(window.currentProjectId, '');
             } else {
-              showToast('Cannot create folder', 'error');
+              showToast(t('filebrowser.toast.cannotCreateFolder'), 'error');
             }
           });
 
@@ -7762,6 +8277,33 @@
       return { open, close, toggle, activateForSession, wireButtons, wireResizer, wireTreeDnD };
     })();
 
+    // ── v0.7.1 Task 15: Download helper ──────────────────────────
+    async function downloadFile(projectId, relPath, filename) {
+      const url = `/api/projects/${encodeURIComponent(projectId)}/files/download`
+        + `?path=${encodeURIComponent(relPath)}`;
+      let res;
+      try {
+        res = await fetch(url, { headers: apiHeaders() });
+      } catch {
+        showToast(window.t('toast.downloadFailed'), 'error');
+        return;
+      }
+      if (!res.ok) {
+        showToast(window.t('toast.downloadFailed'), 'error');
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || relPath.split('/').pop() || 'download';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    }
+
     // ── v0.6.0 FilePreview Modal ─────────────────────────────────
     const FilePreview = (() => {
       let hljsLoaded = null;
@@ -7782,18 +8324,26 @@
         const body = document.getElementById('preview-body');
         document.getElementById('preview-name').textContent = entry.name || relPath.split('/').pop();
         document.getElementById('preview-size').textContent = entry.size != null ? formatSize(entry.size) : '';
-        body.innerHTML = '<div class="preview-oversize">Loading…</div>';
+        body.innerHTML = `<div class="preview-oversize">${t('preview.loading')}</div>`;
         modal.classList.add('open');
         try {
           const res = await fetch(`/api/projects/${projectId}/files/content?path=${encodeURIComponent(relPath)}`, {
             headers: { Authorization: `Bearer ${AUTH_TOKEN || ''}` },
           });
           if (res.status === 413) {
-            body.innerHTML = `<div class="preview-oversize">Too large for preview. Open in terminal.</div>`;
+            body.innerHTML = `<div class="preview-oversize">${t('preview.tooLarge')}</div>`;
+            const downloadBtn = document.createElement('button');
+            downloadBtn.type = 'button';
+            downloadBtn.className = 'btn';
+            downloadBtn.textContent = window.t('preview.oversize.download');
+            downloadBtn.addEventListener('click', () => {
+              downloadFile(projectId, relPath, relPath.split('/').pop());
+            });
+            body.appendChild(downloadBtn);
             return;
           }
           if (res.status === 415) {
-            body.innerHTML = `<div class="preview-oversize">Unknown binary type.</div>`;
+            body.innerHTML = `<div class="preview-oversize">${t('preview.unknownBinary')}</div>`;
             return;
           }
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -7829,7 +8379,7 @@
             } catch {}
           }
         } catch (e) {
-          body.innerHTML = `<div class="preview-oversize">Error: ${(e && e.message) || e}</div>`;
+          body.innerHTML = `<div class="preview-oversize">${t('common.errorWithMessage', { message: (e && e.message) || e })}</div>`;
         }
       }
 
@@ -7907,15 +8457,17 @@
       function openRowContextMenu(projectId, row, e) {
         e.preventDefault();
         const relPath = row.dataset.path;
+        const isFile = row.dataset.type !== 'dir';
         showMenu(e.clientX, e.clientY, [
-          { label: 'Open', action: () => row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })) },
-          { label: 'Rename', action: () => startRename(projectId, row) },
-          { label: 'Copy to…', action: () => promptOp(projectId, relPath, 'copy') },
-          { label: 'Move to…', action: () => promptOp(projectId, relPath, 'move') },
+          { label: t('filebrowser.context.open'), action: () => row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })) },
+          ...(isFile ? [{ label: t('filebrowser.context.download'), action: () => downloadFile(projectId, relPath, relPath.split('/').pop()) }] : []),
+          { label: t('filebrowser.context.rename'), action: () => startRename(projectId, row) },
+          { label: t('filebrowser.context.copyTo'), action: () => promptOp(projectId, relPath, 'copy') },
+          { label: t('filebrowser.context.moveTo'), action: () => promptOp(projectId, relPath, 'move') },
           '---',
-          { label: 'Move to Trash', action: () => confirmDelete(projectId, row, relPath) },
+          { label: t('filebrowser.context.moveToTrash'), action: () => confirmDelete(projectId, row, relPath) },
           '---',
-          { label: 'Copy Path', action: () => navigator.clipboard?.writeText(relPath).catch(() => {}) },
+          { label: t('filebrowser.context.copyPath'), action: () => navigator.clipboard?.writeText(relPath).catch(() => {}) },
         ]);
       }
 
@@ -7956,7 +8508,7 @@
             span.textContent = newName;
             input.replaceWith(span);
           } else {
-            notify('Rename failed', 'error');
+            notify(t('filebrowser.toast.renameFailed'), 'error');
             settled = false;
             cancel();
           }
@@ -7994,7 +8546,7 @@
           if (res.ok) {
             row.remove();
           } else {
-            notify('Delete failed', 'error');
+            notify(t('filebrowser.toast.deleteFailed'), 'error');
             row.classList.remove('pending-delete');
             const lbl = row.querySelector('span:last-child');
             if (lbl) lbl.textContent = oldLabel;
@@ -8004,15 +8556,15 @@
       }
 
       async function promptOp(projectId, relPath, op) {
-        const label = op === 'copy' ? 'Copy to' : 'Move to';
-        const to = window.prompt(`${label} (relative target path):`, relPath);
+        const label = op === 'copy' ? t('filebrowser.prompt.copy') : t('filebrowser.prompt.move');
+        const to = window.prompt(t('filebrowser.prompt.targetPath', { label }), relPath);
         if (!to || to === relPath) return;
         const res = await authedFetch(`/api/projects/${projectId}/files`, {
           method: 'PATCH',
           body: { op, from: relPath, to },
         });
         if (!res.ok) {
-          notify(`${label.toLowerCase()} failed`, 'error');
+          notify(t(op === 'copy' ? 'filebrowser.toast.copyFailed' : 'filebrowser.toast.moveFailed'), 'error');
           return;
         }
         const refreshBtn = document.getElementById('files-refresh');
@@ -8020,14 +8572,14 @@
       }
 
       async function mkdirPrompt(projectId, parentRel = '') {
-        const name = window.prompt('New Folder:');
+        const name = window.prompt(t('filebrowser.prompt.newFolder'));
         if (!name) return;
         const res = await authedFetch(`/api/projects/${projectId}/files/mkdir`, {
           method: 'POST',
           body: { path: parentRel, name },
         });
         if (!res.ok) {
-          notify('Create failed', 'error');
+          notify(t('filebrowser.toast.createFailed'), 'error');
           return;
         }
         const refreshBtn = document.getElementById('files-refresh');
@@ -8077,7 +8629,7 @@
         const stack = document.getElementById('upload-toast-stack');
         const el = document.createElement('div');
         el.className = 'upload-toast';
-        el.innerHTML = '<div><span class="name"></span> — <span class="status">wartet</span></div><div class="bar"><div class="bar-fill"></div></div>';
+        el.innerHTML = `<div><span class="name"></span> — <span class="status">${t('upload.status.queued')}</span></div><div class="bar"><div class="bar-fill"></div></div>`;
         el.querySelector('.name').textContent = name;
         stack.appendChild(el);
         return el;
@@ -8087,7 +8639,7 @@
         if (file.size > HARD_CAP) {
           const t = addToast(file.name);
           t.classList.add('error');
-          t.querySelector('.status').textContent = 'too large (max 100 MB)';
+          t.querySelector('.status').textContent = window.t('upload.status.tooLargeClient');
           setTimeout(() => t.remove(), 5000);
           return;
         }
@@ -8138,25 +8690,25 @@
           xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               toast.querySelector('.bar-fill').style.width = '100%';
-              toast.querySelector('.status').textContent = 'done';
+              toast.querySelector('.status').textContent = window.t('upload.status.done');
               setTimeout(() => toast.remove(), 2000);
             } else if (xhr.status === 409) {
               toast.classList.add('error');
               showConflictUI(toast, job);
             } else if (xhr.status === 413) {
               toast.classList.add('error');
-              toast.querySelector('.status').textContent = 'too large (server)';
+              toast.querySelector('.status').textContent = window.t('upload.status.tooLargeServer');
               setTimeout(() => toast.remove(), 5000);
             } else {
               toast.classList.add('error');
-              toast.querySelector('.status').textContent = `Error ${xhr.status}`;
+              toast.querySelector('.status').textContent = t('upload.status.httpError', { status: xhr.status });
               setTimeout(() => toast.remove(), 5000);
             }
             resolve();
           });
           xhr.addEventListener('error', () => {
             toast.classList.add('error');
-            toast.querySelector('.status').textContent = 'Network error';
+            toast.querySelector('.status').textContent = window.t('upload.status.networkError');
             setTimeout(() => toast.remove(), 5000);
             resolve();
           });
@@ -8165,10 +8717,10 @@
       }
 
       function showConflictUI(toast, job) {
-        toast.querySelector('.status').textContent = 'exists';
+        toast.querySelector('.status').textContent = window.t('upload.status.exists');
         const row = document.createElement('div');
         row.className = 'conflict';
-        row.innerHTML = '<button data-a="rename">Rename</button><button data-a="overwrite">Overwrite</button><button data-a="abort">Cancel</button>';
+        row.innerHTML = `<button data-a="rename">${window.t('upload.conflict.rename')}</button><button data-a="overwrite">${window.t('upload.conflict.overwrite')}</button><button data-a="abort">${window.t('upload.conflict.abort')}</button>`;
         toast.appendChild(row);
         row.addEventListener('click', (e) => {
           const a = e.target.dataset.a;
@@ -8188,10 +8740,10 @@
           xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               toast.classList.remove('error');
-              toast.querySelector('.status').textContent = 'done';
+              toast.querySelector('.status').textContent = window.t('upload.status.done');
               setTimeout(() => toast.remove(), 2000);
             } else {
-              toast.querySelector('.status').textContent = `Error ${xhr.status}`;
+              toast.querySelector('.status').textContent = t('upload.status.httpError', { status: xhr.status });
               setTimeout(() => toast.remove(), 5000);
             }
           });
@@ -8219,7 +8771,7 @@
           overlay.id = 'terminal-drop-overlay';
           const label = document.createElement('div');
           label.id = 'terminal-drop-label';
-          label.textContent = 'Upload to session directory';
+          label.textContent = t('terminal.dropOverlay.label');
           overlay.appendChild(label);
           container.appendChild(overlay);
         }
@@ -8262,7 +8814,7 @@
         if (overlay) overlay.classList.remove('active');
         const name = window.currentSessionName || null;
         if (!name) {
-          if (typeof showToast === 'function') showToast('No active session', 'error');
+          if (typeof showToast === 'function') showToast(t('toast.noActiveSession'), 'error');
           return;
         }
         for (const f of e.dataTransfer.files) {
@@ -8272,6 +8824,35 @@
     }
 
     document.addEventListener('DOMContentLoaded', wireTerminalDnD);
+
+    // ── i18n DOM sweep ─────────────────────────────────────────────
+    function applyI18nToDom(root) {
+      const scope = root || document;
+      // Text content
+      scope.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (key) el.textContent = window.t(key);
+      });
+      // innerHTML — for translations that include trusted markup (<code>, <strong>)
+      scope.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (key) el.innerHTML = window.t(key);
+      });
+      // Attributes — format: "attr1:key1;attr2:key2"
+      scope.querySelectorAll('[data-i18n-attr]').forEach(el => {
+        const spec = el.getAttribute('data-i18n-attr');
+        if (!spec) return;
+        spec.split(';').forEach(pair => {
+          const [attr, key] = pair.split(':').map(s => s.trim());
+          if (!attr || !key) return;
+          el.setAttribute(attr, window.t(key));
+        });
+      });
+    }
+    window.applyI18nToDom = applyI18nToDom;
+
+    // Apply once at boot so HTML authored in the file gets localized.
+    document.addEventListener('DOMContentLoaded', () => applyI18nToDom(document));
   </script>
 
   <div class="file-preview-modal" id="file-preview-modal">
@@ -8280,8 +8861,8 @@
         <span class="name" id="preview-name"></span>
         <span class="size" id="preview-size"></span>
         <span class="spacer"></span>
-        <button id="preview-copy-path" title="Copy Path">Path</button>
-        <button id="preview-close" title="Close">×</button>
+        <button id="preview-copy-path" title="Copy Path" data-i18n-attr="title:preview.copyPathTitle" data-i18n="preview.copyPathLabel">Path</button>
+        <button id="preview-close" title="Close" data-i18n-attr="title:preview.closeTitle" data-i18n="preview.closeLabel">×</button>
       </div>
       <div class="preview-body" id="preview-body"></div>
     </div>

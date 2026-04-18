@@ -10,7 +10,8 @@ import { spawn } from 'node-pty';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve, sep } from 'path';
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
+import { createChecker } from './lib/update-check.js';
 import { mkdir as fsMkdir } from 'fs/promises';
 import { homedir } from 'os';
 import { getCurrentContext, getDailyUsageV2 } from './lib/usage.js';
@@ -28,6 +29,7 @@ import {
   copy as filesCopy,
   deleteToTrash as filesDeleteToTrash,
   writeStream as filesWriteStream,
+  streamFileToResponse as filesStreamToResponse,
   FileError,
 } from './lib/files.js';
 import Busboy from 'busboy';
@@ -45,6 +47,9 @@ import webpush from 'web-push';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const pkgJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+const updateChecker = createChecker({ current: pkgJson.version });
 
 const PORT = process.env.PORT || 3333;
 const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
@@ -151,7 +156,7 @@ app.get('/healthz', (_req, res) => {
     uptimeSeconds: Math.floor((Date.now() - START_TIME) / 1000),
     sessions: getTmuxSessions().length,
     activePtys: activePtys.size,
-    version: process.env.npm_package_version || null,
+    version: pkgJson.version || null,
   });
 });
 
@@ -267,6 +272,11 @@ app.get('/api/push/vapid-public-key', (_req, res) => {
 });
 
 app.use('/api', secureMiddleware);
+
+// Update-Check: zeigt aktuelle + neueste Version.
+app.get('/api/version', (_req, res) => {
+  res.json(updateChecker.getState());
+});
 
 // ── Rate-Limiting ────────────────────────────────────────────────────────────
 // Zwei Buckets via createRateLimiter: Read (GET/HEAD) und Write (sonst).
@@ -729,6 +739,7 @@ function handleFileError(res, err) {
   if (err instanceof FileError) {
     const status = {
       forbidden: 403,
+      'not-found': 404,
       'not-a-dir': 400,
       'not-a-file': 400,
       'bad-name': 400,
@@ -798,6 +809,15 @@ app.delete('/api/projects/:id/files', async (req, res) => {
     if (paths.length === 0) return res.status(400).json({ error: 'no-paths' });
     const result = await filesDeleteToTrash(project.path, paths);
     res.json(result);
+  } catch (e) { handleFileError(res, e); }
+});
+
+app.get('/api/projects/:id/files/download', async (req, res) => {
+  try {
+    const project = await getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: 'not-found' });
+    const rel = typeof req.query.path === 'string' ? req.query.path : '';
+    filesStreamToResponse(project.path, rel, res);
   } catch (e) { handleFileError(res, e); }
 });
 
@@ -1564,6 +1584,11 @@ app.ws('/api/files/events', (ws, req) => {
 app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'public', 'index.html'));
 });
+
+// Update-Check: einmal beim Start (non-blocking), danach alle 12h.
+// .unref() verhindert dass das Interval den Prozess beim Shutdown am Leben hält.
+setImmediate(() => updateChecker.check());
+setInterval(() => updateChecker.check(), 12 * 60 * 60 * 1000).unref();
 
 // ── Start + Graceful Shutdown ───────────────────────────────────────────────
 const server = app.listen(PORT, async () => {

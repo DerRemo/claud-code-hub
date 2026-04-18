@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures.js';
 import { navigateToSession, waitForTerminal, getToken, openFileSidebar } from './helpers.js';
+import { readFileSync } from 'fs';
 
 // Filebrowser tests use the always-running cc-claude-code-hub session
 // because the file API requires a registered project (projectId).
@@ -118,7 +119,7 @@ test.describe('Filebrowser', () => {
       await row.click({ button: 'right' });
       const menu = page.locator('.cchub-contextmenu');
       await menu.waitFor({ timeout: 3_000 });
-      await menu.locator('button', { hasText: 'Umbenennen' }).click();
+      await menu.locator('button', { hasText: /Rename|Umbenennen/i }).click();
 
       const input = row.locator('.rename-input');
       await input.waitFor({ timeout: 3_000 });
@@ -161,7 +162,7 @@ test.describe('Filebrowser', () => {
     await row.click({ button: 'right' });
     const menu = page.locator('.cchub-contextmenu');
     await menu.waitFor({ timeout: 3_000 });
-    await menu.locator('button', { hasText: 'In Papierkorb' }).click();
+    await menu.locator('button', { hasText: /Move to Trash|In Papierkorb/i }).click();
     await page.waitForTimeout(200);
 
     await expect(row).toHaveClass(/pending-delete/, { timeout: 5_000 });
@@ -184,7 +185,7 @@ test.describe('Filebrowser', () => {
     await firstRow.click({ button: 'right' });
     const menu = page.locator('.cchub-contextmenu');
     await menu.waitFor({ timeout: 3_000 });
-    const copyPathBtn = menu.locator('button', { hasText: /Pfad/ });
+    const copyPathBtn = menu.locator('button', { hasText: /Copy Path|Pfad/i });
     if (await copyPathBtn.count() > 0) {
       await copyPathBtn.click();
       await page.waitForTimeout(300);
@@ -261,5 +262,70 @@ test.describe('Filebrowser', () => {
 
     await openFileSidebar(page);
     await expect(page.locator('#files-upload-picker')).toBeVisible();
+  });
+
+  test('downloads a file via context menu', async ({ authedPage: page, projectSession, isTouch }) => {
+    test.skip(isTouch, 'context menu requires right-click, not available on touch devices');
+
+    const toggleBtn = page.locator('#btn-toggle-files');
+    if (!(await toggleBtn.isVisible())) {
+      test.skip(true, 'file toggle not visible');
+      return;
+    }
+
+    // Seed a known file via the upload API so we can assert its content after download
+    const fileName = `e2e-download-${Date.now()}.txt`;
+    const fileContent = `Hello from Playwright download test! (${Date.now()})`;
+    const token = await getToken(page);
+
+    const formData = new FormData();
+    formData.append('file', new Blob([fileContent], { type: 'text/plain' }), fileName);
+
+    const uploadRes = await page.request.post(
+      `/api/projects/${projectSession.projectId}/files/upload`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        multipart: {
+          file: {
+            name: fileName,
+            mimeType: 'text/plain',
+            buffer: Buffer.from(fileContent),
+          },
+        },
+      }
+    );
+    expect(uploadRes.ok(), `Upload failed: ${uploadRes.status()}`).toBeTruthy();
+
+    try {
+      await openFileSidebar(page);
+
+      // Refresh tree to ensure the new file is visible
+      await page.click('#files-refresh');
+      await page.waitForTimeout(1_000);
+
+      const fileRow = page.locator(`#files-tree .file-row[data-path="${fileName}"]`);
+      await fileRow.waitFor({ timeout: 8_000 });
+      await expect(fileRow).toBeVisible();
+
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        (async () => {
+          await fileRow.click({ button: 'right' });
+          const menu = page.locator('.cchub-contextmenu');
+          await menu.waitFor({ timeout: 3_000 });
+          await menu.locator('button', { hasText: /download/i }).click();
+        })(),
+      ]);
+
+      const downloadPath = await download.path();
+      const downloadedContent = readFileSync(downloadPath, 'utf8');
+      expect(downloadedContent).toBe(fileContent);
+    } finally {
+      // Cleanup: delete the seeded file
+      await page.request.delete(`/api/projects/${projectSession.projectId}/files`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        data: { paths: [fileName] },
+      }).catch(() => {});
+    }
   });
 });
