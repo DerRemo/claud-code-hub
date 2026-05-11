@@ -7141,6 +7141,10 @@
       async function init(skipSelect) {
         const root = rootEl();
         if (!root) return;
+        // Reset state from any previous open so a stale selectedNode (now detached)
+        // does not get re-used by startMkdir while init's fetchBrowse is in flight.
+        state.selectedNode = null;
+        state.pendingInput = null;
         root.innerHTML = `<div class="tree-empty">${t('treePicker.loading')}</div>`;
         try {
           const data = await fetchBrowse('~');
@@ -7240,23 +7244,21 @@
             });
             if (res.status === 201) {
               const data = await res.json();
-              // Replace the input row with a real node
-              if (state.pendingInput === row) state.pendingInput = null;
+              if (state.pendingInput !== row) return; // modal was closed mid-flight
+              state.pendingInput = null;
               row.remove();
               const newNode = createNode({ name, path: data.path });
               container.insertBefore(newNode, container.firstChild);
-              // Select the new node
               rootEl().querySelectorAll('.tree-row.selected').forEach(el => el.classList.remove('selected'));
               newNode.querySelector(':scope > .tree-row').classList.add('selected');
               setSelected(data.path, newNode);
               return;
             }
             input.disabled = false;
-            if (res.status === 400)       setHint('treePicker.mkdir.invalidName');
-            else if (res.status === 409)  setHint('treePicker.mkdir.exists');
+            if (res.status === 400)       { setHint('treePicker.mkdir.invalidName'); input.focus(); }
+            else if (res.status === 409)  { setHint('treePicker.mkdir.exists');      input.focus(); }
             else if (res.status === 403)  { showToast(t('treePicker.mkdir.failed'), 'error'); cancelPendingInput(); }
-            else                          showToast(t('treePicker.mkdir.failed'), 'error');
-            input.focus();
+            else                          { showToast(t('treePicker.mkdir.failed'), 'error'); input.focus(); }
           } catch {
             input.disabled = false;
             showToast(t('treePicker.mkdir.failed'), 'error');
