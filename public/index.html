@@ -7066,13 +7066,14 @@
       return res.json();
     }
 
-    function createTreePicker({ rootElId, selectedElId }) {
+    function createTreePicker({ rootElId, selectedElId, allowMkdir = false, mkdirBtnId = null }) {
       const rootEl = () => document.getElementById(rootElId);
       const selEl  = () => document.getElementById(selectedElId);
-      const state  = { selectedDir: '' };
+      const state  = { selectedDir: '', selectedNode: null, pendingInput: null };
 
-      function setSelected(path) {
+      function setSelected(path, node = null) {
         state.selectedDir = path;
+        state.selectedNode = node;
         const el = selEl();
         if (el) el.textContent = path;
       }
@@ -7096,36 +7097,45 @@
           rootEl().querySelectorAll('.tree-row.selected')
             .forEach(el => el.classList.remove('selected'));
           row.classList.add('selected');
-          setSelected(entry.path);
+          setSelected(entry.path, node);
 
           if (node.dataset.loaded === '1') {
             node.classList.toggle('expanded');
             return;
           }
 
-          node.dataset.loaded = '1';
-          node.classList.add('expanded');
-          const children = document.createElement('div');
-          children.className = 'tree-children';
-          children.innerHTML = `<div class="tree-empty">${t('treePicker.loading')}</div>`;
-          node.appendChild(children);
-
-          try {
-            const data = await fetchBrowse(entry.path);
-            children.innerHTML = '';
-            if (data.entries.length === 0) {
-              children.innerHTML = `<div class="tree-empty">${t('filebrowser.tree.noSubdirs')}</div>`;
-              row.querySelector('.tree-arrow').classList.add('empty');
-            } else {
-              data.entries.forEach(ch => children.appendChild(createNode(ch)));
-            }
-          } catch (err) {
-            children.innerHTML = `<div class="tree-error">${escapeHtml(err.message)}</div>`;
-          }
+          await expandNode(node, entry.path);
         });
 
         node.appendChild(row);
         return node;
+      }
+
+      async function expandNode(node, path) {
+        if (node.dataset.loaded === '1') {
+          node.classList.add('expanded');
+          return;
+        }
+        node.dataset.loaded = '1';
+        node.classList.add('expanded');
+        const children = document.createElement('div');
+        children.className = 'tree-children';
+        children.innerHTML = `<div class="tree-empty">${t('treePicker.loading')}</div>`;
+        node.appendChild(children);
+
+        try {
+          const data = await fetchBrowse(path);
+          children.innerHTML = '';
+          if (data.entries.length === 0) {
+            children.innerHTML = `<div class="tree-empty">${t('filebrowser.tree.noSubdirs')}</div>`;
+            const arrow = node.querySelector(':scope > .tree-row > .tree-arrow');
+            if (arrow) arrow.classList.add('empty');
+          } else {
+            data.entries.forEach(ch => children.appendChild(createNode(ch)));
+          }
+        } catch (err) {
+          children.innerHTML = `<div class="tree-error">${escapeHtml(err.message)}</div>`;
+        }
       }
 
       async function init(skipSelect) {
@@ -7134,7 +7144,7 @@
         root.innerHTML = `<div class="tree-empty">${t('treePicker.loading')}</div>`;
         try {
           const data = await fetchBrowse('~');
-          if (!skipSelect) setSelected(data.path);
+          if (!skipSelect) setSelected(data.path, null);
           root.innerHTML = '';
           if (data.entries.length === 0) {
             root.innerHTML = `<div class="tree-empty">${t('filebrowser.tree.pickerEmpty')}</div>`;
@@ -7146,16 +7156,152 @@
         }
       }
 
+      // ── Mkdir flow ───────────────────────────────────────────────
+      // Resolves the container for the new input row:
+      //   - selected folder's tree-children (expand first if needed)
+      //   - or the root tree-list if nothing selected
+      async function resolveParentContainer() {
+        if (state.selectedNode) {
+          await expandNode(state.selectedNode, state.selectedDir);
+          let children = state.selectedNode.querySelector(':scope > .tree-children');
+          if (!children) {
+            children = document.createElement('div');
+            children.className = 'tree-children';
+            state.selectedNode.appendChild(children);
+          }
+          // If the "(empty)" placeholder is there, clear it.
+          const placeholder = children.querySelector(':scope > .tree-empty');
+          if (placeholder) placeholder.remove();
+          return { container: children, parentPath: state.selectedDir };
+        }
+        // Fall back to the root listing (which is ~).
+        return { container: rootEl(), parentPath: selEl()?.textContent || '~' };
+      }
+
+      function cancelPendingInput() {
+        if (state.pendingInput && state.pendingInput.parentNode) {
+          state.pendingInput.parentNode.removeChild(state.pendingInput);
+        }
+        state.pendingInput = null;
+      }
+
+      function clientValidate(name, container) {
+        if (!name || !name.trim()) return 'invalidName';
+        if (/[\/\\\0]/.test(name)) return 'invalidName';
+        if (name === '.' || name === '..') return 'invalidName';
+        if (name.length > 255) return 'invalidName';
+        // Duplicate check among already-listed sibling folders
+        const existing = Array.from(container.querySelectorAll(':scope > .tree-node > .tree-row > .tree-name'))
+          .map(el => el.textContent);
+        if (existing.includes(name)) return 'exists';
+        return null;
+      }
+
+      async function startMkdir() {
+        cancelPendingInput();
+        const { container, parentPath } = await resolveParentContainer();
+
+        const row = document.createElement('div');
+        row.className = 'tree-row tree-row-new';
+        row.innerHTML = `
+          <span class="tree-arrow empty">▸</span>
+          <span class="tree-icon">📁</span>
+          <input type="text" autocomplete="off" spellcheck="false"
+                 placeholder="${escapeHtml(t('treePicker.mkdir.placeholder'))}">
+          <span class="tree-mkdir-hint"></span>
+        `;
+        // Insert at top of the container, after any non-node header
+        container.insertBefore(row, container.firstChild);
+        state.pendingInput = row;
+
+        const input = row.querySelector('input');
+        const hint  = row.querySelector('.tree-mkdir-hint');
+
+        function setHint(msgKey) {
+          hint.textContent = msgKey ? t(msgKey) : '';
+          row.classList.toggle('error', !!msgKey);
+        }
+
+        async function submit() {
+          const name = input.value.trim();
+          const localErr = clientValidate(name, container);
+          if (localErr) {
+            setHint('treePicker.mkdir.' + (localErr === 'exists' ? 'exists' : 'invalidName'));
+            input.focus();
+            return;
+          }
+          input.disabled = true;
+          try {
+            const targetPath = parentPath.replace(/\/+$/, '') + '/' + name;
+            const res = await fetch('/api/browse/mkdir', {
+              method: 'POST',
+              headers: apiHeaders(),
+              body: JSON.stringify({ path: targetPath }),
+            });
+            if (res.status === 201) {
+              const data = await res.json();
+              // Replace the input row with a real node
+              if (state.pendingInput === row) state.pendingInput = null;
+              row.remove();
+              const newNode = createNode({ name, path: data.path });
+              container.insertBefore(newNode, container.firstChild);
+              // Select the new node
+              rootEl().querySelectorAll('.tree-row.selected').forEach(el => el.classList.remove('selected'));
+              newNode.querySelector(':scope > .tree-row').classList.add('selected');
+              setSelected(data.path, newNode);
+              return;
+            }
+            input.disabled = false;
+            if (res.status === 400)       setHint('treePicker.mkdir.invalidName');
+            else if (res.status === 409)  setHint('treePicker.mkdir.exists');
+            else if (res.status === 403)  { showToast(t('treePicker.mkdir.failed'), 'error'); cancelPendingInput(); }
+            else                          showToast(t('treePicker.mkdir.failed'), 'error');
+            input.focus();
+          } catch {
+            input.disabled = false;
+            showToast(t('treePicker.mkdir.failed'), 'error');
+            input.focus();
+          }
+        }
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter')  { e.preventDefault(); submit(); }
+          else if (e.key === 'Escape') { e.preventDefault(); cancelPendingInput(); }
+        });
+        input.addEventListener('blur', () => {
+          // Defer so a click on the disabled state (during submit) doesn't kill the row.
+          setTimeout(() => {
+            if (state.pendingInput === row && !input.disabled && !input.value.trim()) {
+              cancelPendingInput();
+            }
+          }, 100);
+        });
+
+        setTimeout(() => input.focus(), 0);
+      }
+
+      // Bind the toolbar button if requested
+      if (allowMkdir && mkdirBtnId) {
+        const btn = document.getElementById(mkdirBtnId);
+        if (btn) btn.addEventListener('click', () => { startMkdir(); });
+      }
+
       return {
         init,
         getSelected: () => state.selectedDir,
         setSelected, // erlaubt pre-fill von außen, bevor init() fertig ist
+        cancelPendingInput, // for modal-close cleanup
       };
     }
 
     // Session-Modal Picker. Der Alias `initTreePicker()` bleibt für die
     // Call-Site in openNewSessionModal() bestehen.
-    const sessionTreePicker = createTreePicker({ rootElId: 'tree-root', selectedElId: 'tree-selected' });
+    const sessionTreePicker = createTreePicker({
+      rootElId: 'tree-root',
+      selectedElId: 'tree-selected',
+      allowMkdir: true,
+      mkdirBtnId: 'tree-mkdir-btn',
+    });
     async function initTreePicker() { return sessionTreePicker.init(); }
 
     // Projekt-Modal Picker wird beim ersten Öffnen des New-Project-Modals
@@ -7210,6 +7356,7 @@
     }
 
     function closeNewSessionModal() {
+      sessionTreePicker.cancelPendingInput();
       document.getElementById('new-session-modal').classList.remove('open');
     }
 
