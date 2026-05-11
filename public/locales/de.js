@@ -264,6 +264,12 @@ window.__I18N_BUNDLES.de = {
 
   // Tree picker (inside modals)
   'treePicker.loading': 'Lädt…',
+  'treePicker.mkdir.button':       '+ Ordner',
+  'treePicker.mkdir.title':        'Neuer Ordner',
+  'treePicker.mkdir.placeholder':  'Ordnername…',
+  'treePicker.mkdir.invalidName':  'Ungültiger Name',
+  'treePicker.mkdir.exists':       'Existiert bereits',
+  'treePicker.mkdir.failed':       'Anlegen fehlgeschlagen',
 
   // Session card — git badge
   'sessionCard.git.statusTitle': 'Git-Status',
