@@ -5840,7 +5840,7 @@
         }
         grid.appendChild(empty);
         const newBtn = empty.querySelector('[data-action="new-session"]');
-        if (newBtn) newBtn.addEventListener('click', openNewSessionModal);
+        if (newBtn) newBtn.addEventListener('click', () => openNewSessionModal());
         return;
       }
 
@@ -7564,7 +7564,7 @@
 
     // ── Wiring: Event-Listener für Buttons + Shortcuts ────────────
     document.getElementById('refresh-btn').addEventListener('click', () => refreshSessions());
-    document.getElementById('new-session-btn').addEventListener('click', openNewSessionModal);
+    document.getElementById('new-session-btn').addEventListener('click', () => openNewSessionModal());
     // Zurück-Button im Terminal-Toolbar → setView('dashboard') wird den
     // History-Eintrag via history.back() räumen, popstate ruft dann das
     // Teardown (disconnectTerminal). Kein Direkt-Aufruf von disconnectTerminal

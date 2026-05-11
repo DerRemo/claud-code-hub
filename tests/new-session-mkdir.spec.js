@@ -24,7 +24,7 @@ test.describe('New-session mkdir', () => {
     await expect(page.locator('#tree-mkdir-btn')).toBeVisible();
     // And NOT in the project modal
     await page.keyboard.press('Escape');
-    await page.click('#new-project-btn').catch(() => {});
+    await page.click('#new-project-btn', { timeout: 1500 }).catch(() => {});
     // Project modal might not exist on all viewports — if it does, mkdir-btn must be absent.
     const projectModal = page.locator('#new-project-modal');
     if (await projectModal.isVisible().catch(() => false)) {
