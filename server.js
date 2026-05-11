@@ -43,6 +43,7 @@ import * as attention from './lib/attention.js';
 import { loadVapid } from './lib/vapid.js';
 import * as pushSubs from './lib/push-subscriptions.js';
 import webpush from 'web-push';
+import { browseMkdir, BrowseMkdirError } from './lib/browse-mkdir.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -920,6 +921,30 @@ app.get('/api/browse', (req, res) => {
     res.json({ path: p, home: HOME, entries });
   } catch (err) {
     res.status(400).json({ error: err.message, path: p });
+  }
+});
+
+// Create a new directory under the configured BROWSE_ROOTS. Mirrors /api/browse's
+// path-guard. Body: { path: "<absolute>" }. The path may be sent with a leading
+// "~" — we expand to $HOME just like /api/browse.
+app.post('/api/browse/mkdir', (req, res) => {
+  let p = req.body && req.body.path;
+  if (typeof p !== 'string' || p.length === 0) {
+    return res.status(400).json({ error: 'path required' });
+  }
+  if (p === '~' || p.startsWith('~/')) p = join(HOME, p.slice(1));
+  p = resolve(p);
+  try {
+    const created = browseMkdir(p, BROWSE_ROOTS);
+    return res.status(201).json({ path: created });
+  } catch (err) {
+    if (!(err instanceof BrowseMkdirError)) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (err.code === 'invalid_name') return res.status(400).json({ error: err.message });
+    if (err.code === 'forbidden')    return res.status(403).json({ error: err.message });
+    if (err.code === 'exists')       return res.status(409).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
